@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+    <h3 class="fw-bold mb-0 page-title">Expenses</h3>
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-ai-badge rounded-pill d-flex align-items-center gap-1">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Active
+        </button>
+        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold">
+            {{ request.state.user.full_name[0] | upper }}
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-pills custom-tabs mb-4" id="pills-tab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active rounded-pill px-4 py-2 me-2" id="pills-records-tab" data-bs-toggle="pill" data-bs-target="#pills-records" type="button" role="tab">Records</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link rounded-pill px-4 py-2" id="pills-add-tab" data-bs-toggle="pill" data-bs-target="#pills-add" type="button" role="tab">Add entry</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="pills-tabContent">
+    <!-- Records Tab -->
+    <div class="tab-pane fade show active" id="pills-records" role="tabpanel">
+
+        <!-- Filters -->
+        <div class="d-flex flex-column gap-3 mb-4">
+            <select class="form-select custom-select py-3 rounded-3 shadow-sm w-100">
+                <option selected>All months</option>
+                <option value="1">May</option>
+            </select>
+            <select class="form-select custom-select py-3 rounded-3 shadow-sm w-100">
+                <option selected>All categories</option>
+                <option value="1">Supplies</option>
+                <option value="2">Rent</option>
+            </select>
+        </div>
+
+        <!-- Export Btn -->
+        <div class="mb-4">
+            <button class="btn d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3 custom-export-btn">
+                <i class="fa-solid fa-download"></i> Export CSV
+            </button>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-card mb-3">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 custom-table align-middle">
+                    <thead class="table-header">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Receipt</th>
+                            <th class="text-center pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTableBody">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="text-secondary small mb-5" id="recordCount">Loading records...</div>
+    </div>
+
+    <!-- Add Entry Tab -->
+    <div class="tab-pane fade" id="pills-add" role="tabpanel">
+        <div class="bg-dark-card p-4" style="border-radius:12px;">
+            <h5 class="mb-4 fw-bold page-title">New expense entry</h5>
+            <form id="addExpenseForm" novalidate>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="expenseDate" class="form-label text-secondary fw-semibold">Date</label>
+                        <input type="date" class="form-control py-2 rounded-3 shadow-sm" id="expenseDate" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="expenseAmount" class="form-label text-secondary fw-semibold">Amount (₱)</label>
+                        <input type="number" step="0.01" class="form-control py-2 rounded-3 shadow-sm" id="expenseAmount" placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="expenseDescription" class="form-label text-secondary fw-semibold">Description</label>
+                        <input type="text" class="form-control py-2 rounded-3 shadow-sm" id="expenseDescription" placeholder="e.g. Office rent" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="expenseCategory" class="form-label text-secondary fw-semibold">Category</label>
+                        <select class="form-select py-2 rounded-3 shadow-sm" id="expenseCategory" required>
+                            <option value="" disabled selected>Select category</option>
+                            <option value="Supplies">Supplies</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Salaries">Salaries</option>
+                            <option value="Utilities">Utilities</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="expenseVendor" class="form-label text-secondary fw-semibold">Vendor (Optional)</label>
+                        <input type="text" class="form-control py-2 rounded-3 shadow-sm" id="expenseVendor" placeholder="e.g. Realty Corp">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="expenseReceipt" class="form-label text-secondary fw-semibold">Receipt File (Optional image/PDF)</label>
+                        <input type="file" class="form-control py-2 rounded-3 shadow-sm" id="expenseReceipt" accept="image/*,application/pdf">
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success px-4 py-2 rounded-3 fw-semibold" id="btnSaveExpense">Save entry</button>
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2 rounded-3 fw-semibold" id="btnCancelExpense">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/expenses.js"></script>
+{% endblock %}

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or "BizTrack - Error" }}</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: radial-gradient(circle at center, #1b2e4b 0%, #0c1726 100%);
+            color: #f3f4f6;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Decorative ambient glowing blobs */
+        .ambient-glow-1 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
+            top: -100px;
+            left: -100px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .ambient-glow-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(2, 119, 189, 0.15) 0%, rgba(2, 119, 189, 0) 70%);
+            bottom: -100px;
+            right: -100px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            perspective: 1000px;
+        }
+
+        .glass-card {
+            background: rgba(27, 46, 75, 0.45);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 3.5rem 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: translateY(0);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -10px rgba(16, 185, 129, 0.15);
+        }
+
+        /* Floating icon wrapper */
+        .icon-wrapper {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #10b981;
+            font-size: 2.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            position: relative;
+            animation: pulse-ring 2s infinite;
+        }
+        
+        .icon-wrapper.danger {
+            color: #ef4444;
+        }
+        .icon-wrapper.warning {
+            color: #f59e0b;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.2);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* Large status code */
+        h1.status-code {
+            font-size: 7.5rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem;
+            line-height: 1;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #10b981 0%, #0277bd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.15));
+        }
+
+        h2.heading {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        p.message {
+            font-size: 1rem;
+            color: #9ca3af;
+            line-height: 1.6;
+            margin: 0 0 2.5rem;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Button group */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.8rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Logo decoration */
+        .logo-watermark {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 3rem;
+            opacity: 0.3;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .logo-watermark i {
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="container">
+        <div class="glass-card">
+            <!-- Icon -->
+            <div class="icon-wrapper {% if color == 'danger' %}danger{% elif color == 'warning' %}warning{% endif %}">
+                <i class="fa-solid {{ icon or 'fa-circle-question' }}"></i>
+            </div>
+
+            <!-- Status Code -->
+            <h1 class="status-code">{{ status_code or 404 }}</h1>
+
+            <!-- Heading -->
+            <h2 class="heading">{{ heading or "Page Not Found" }}</h2>
+
+            <!-- Message -->
+            <p class="message">
+                {{ message or "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable." }}
+            </p>
+
+            <!-- Action buttons -->
+            <div class="btn-group">
+                <a href="{{ action_url or '/' }}" class="btn btn-primary">
+                    <i class="fa-solid {% if action_label and 'Sign In' in action_label %}fa-right-to-bracket{% elif action_label and 'Dashboard' in action_label %}fa-table-columns{% else %}fa-home{% endif %}"></i>
+                    <span>{{ action_label or "Go to Home" }}</span>
+                </a>
+                <button onclick="window.history.back()" class="btn btn-secondary">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Go Back</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="logo-watermark">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>BizTrack Business Intelligence</span>
+        </div>
+    </div>
+</body>
+</html>

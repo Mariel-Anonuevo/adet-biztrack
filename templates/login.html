@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizTrack - Login</title>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/auth.css">
+</head>
+<body class="auth-body">
+
+<div class="auth-container">
+    <!-- Left Green Panel -->
+    <div class="auth-left">
+        <!-- Exact SVG Logo Recreation -->
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- 5 Bars -->
+            <rect x="0" y="55" width="14" height="45" fill="#1b2e4b" rx="2" />
+            <rect x="20" y="45" width="14" height="55" fill="#1b2e4b" rx="2" />
+            <rect x="40" y="35" width="14" height="65" fill="#ffffff" rx="2" />
+            <rect x="60" y="25" width="14" height="75" fill="#1b2e4b" rx="2" />
+            <rect x="80" y="10" width="14" height="90" fill="#1b2e4b" rx="2" />
+            
+            <!-- Arrow Line -->
+            <path d="M 5 60 L 30 35 L 50 45 L 85 5" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" />
+            <circle cx="5" cy="60" r="3" fill="#ffffff" />
+            <polygon points="80,5 90,5 88,15" fill="#ffffff" />
+        </svg>
+        
+        <div class="logo-title">BizTrack</div>
+        <div class="logo-subtitle">Business Intelligence</div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-right">
+        <div class="auth-card">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Access your financial command center.</p>
+
+
+            <form id="loginForm">
+                <div id="sessionAlert" style="display:none; color: #92400e; background: #fef9c3; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem; border: 1px solid #fde68a;"></div>
+                <div id="errorAlert" style="display:none; color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem;"></div>
+
+                <label class="auth-label">Email Address</label>
+                <div class="auth-input-group">
+                    <i class="fa-regular fa-envelope auth-input-icon"></i>
+                    <input type="email" id="email" class="auth-input" placeholder="user@gmail.com" pattern="[^@\s]+@gmail\.com$" required>
+                </div>
+
+                <label class="auth-label">Password</label>
+                <div class="auth-input-group">
+                    <i class="fa-solid fa-lock auth-input-icon"></i>
+                    <input type="password" id="password" class="auth-input" placeholder="••••••••" required>
+                    <i class="fa-regular fa-eye auth-input-icon auth-toggle-password" id="togglePassword" role="button" aria-label="Show password" tabindex="0"></i>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <label class="auth-checkbox-container">
+                        <input type="checkbox">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="/auth/forgot" class="auth-link" style="font-size: 0.85rem;">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="auth-btn" id="submitBtn">
+                    <span class="btn-text">Sign In <i class="fa-solid fa-arrow-right ms-2" style="margin-left: 5px;"></i></span>
+                    <span class="spinner"></span>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="/auth/register" class="auth-link">Create account</a> 
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/auth.js"></script>
+</body>
+</html>

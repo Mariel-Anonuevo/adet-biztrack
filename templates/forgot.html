@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizTrack - Forgot Password</title>
+    <meta name="description" content="Reset your BizTrack account password. Enter your registered email to receive a secure reset link.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <style>
+        /* ── Email-sent success card ── */
+        .success-card {
+            display: none;
+            text-align: center;
+            animation: fadeInUp 0.45s ease;
+        }
+        .success-icon-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: #065f46;
+            position: relative;
+            animation: pulseGreen 2s ease-in-out infinite;
+        }
+        @keyframes pulseGreen {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.35); }
+            50%       { box-shadow: 0 0 0 14px rgba(52, 211, 153, 0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .success-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.6rem;
+        }
+        .success-body {
+            font-size: 0.88rem;
+            color: #4b5563;
+            line-height: 1.65;
+            margin-bottom: 1.6rem;
+        }
+        .success-body strong {
+            color: #111827;
+        }
+        .success-tips {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #065f46;
+            margin-bottom: 1.6rem;
+        }
+        .success-tips li {
+            margin-bottom: 4px;
+        }
+        .success-tips li:last-child {
+            margin-bottom: 0;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #2d7a56;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-btn:hover { color: #1b4f3a; }
+    </style>
+</head>
+<body class="auth-body">
+<div class="auth-container">
+
+    <!-- Left brand panel -->
+    <div class="auth-left">
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0"  y="55" width="14" height="45" fill="#1b2e4b" rx="2"/>
+            <rect x="20" y="45" width="14" height="55" fill="#1b2e4b" rx="2"/>
+            <rect x="40" y="35" width="14" height="65" fill="#ffffff" rx="2"/>
+            <rect x="60" y="25" width="14" height="75" fill="#1b2e4b" rx="2"/>
+            <rect x="80" y="10" width="14" height="90" fill="#1b2e4b" rx="2"/>
+            <path d="M 5 60 L 30 35 L 50 45 L 85 5" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="5" cy="60" r="3" fill="#ffffff"/>
+            <polygon points="80,5 90,5 88,15" fill="#ffffff"/>
+        </svg>
+        <div class="logo-title">BizTrack</div>
+        <div class="logo-subtitle">Business Intelligence</div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="auth-right">
+        <div class="auth-card">
+
+            <!-- ── Forgot Password Form ── -->
+            <div id="forgotFormSection">
+                <h1 class="auth-title">Forgot Password</h1>
+                <p class="auth-subtitle" style="text-align:left;">
+                    Enter your registered Gmail address and we'll send you a secure reset link.
+                </p>
+
+                <form id="forgotForm" novalidate>
+                    <div id="errorAlert"
+                         style="display:none; color:#dc3545; background:#f8d7da; padding:10px 14px;
+                                border-radius:6px; font-size:0.85rem; margin-bottom:1rem; border:1px solid #f5c2c7;">
+                    </div>
+
+                    <label class="auth-label" for="forgotEmail">Email Address</label>
+                    <div class="auth-input-group">
+                        <i class="fa-regular fa-envelope auth-input-icon"></i>
+                        <input type="email" id="forgotEmail" class="auth-input"
+                               placeholder="user@gmail.com" required autocomplete="email">
+                    </div>
+
+                    <button type="submit" class="auth-btn" id="forgotSubmitBtn" style="margin-top:0.5rem;">
+                        <span class="btn-text">
+                            Send Reset Link &nbsp;<i class="fa-solid fa-paper-plane"></i>
+                        </span>
+                        <span class="spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-footer" style="margin-top:1.75rem; text-align:center; font-size:0.85rem;">
+                    Remember your password?
+                    <a href="/auth/login" class="auth-link">Sign In</a>
+                </div>
+            </div>
+
+            <!-- ── Email-Sent Success Card (shown after submit) ── -->
+            <div id="emailSentCard" class="success-card">
+                <div class="success-icon-wrap">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+                <div class="success-title">Check Your Inbox!</div>
+                <p class="success-body" id="successEmailMsg">
+                    A password reset link has been sent to <strong id="sentToEmail"></strong>.
+                    The link expires in <strong>30 minutes</strong>.
+                </p>
+                <ul class="success-tips">
+                    <li><i class="fa-solid fa-circle-check" style="margin-right:5px;"></i>Open the email from <strong>BizTrack</strong></li>
+                    <li><i class="fa-solid fa-circle-check" style="margin-right:5px;"></i>Click <em>"Reset My Password"</em></li>
+                    <li><i class="fa-solid fa-triangle-exclamation" style="margin-right:5px;"></i>Check your spam / junk folder if it doesn't arrive</li>
+                    <li><i class="fa-solid fa-clock" style="margin-right:5px;"></i>Link expires after 30 minutes — request a new one if needed</li>
+                </ul>
+                <a href="/auth/forgot" class="back-btn">
+                    <i class="fa-solid fa-rotate-left"></i> Didn't receive it? Request again
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="/static/js/auth.js"></script>
+</body>
+</html>

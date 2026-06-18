@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizTrack - {{ title }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    <div class="sidebar text-white" id="sidebar-wrapper">
+        <div class="sidebar-heading d-flex align-items-center gap-2">
+            <div class="logo-icon bg-success bg-gradient text-white d-flex align-items-center justify-content-center rounded">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+                <h5 class="mb-0 fw-bold">BizTrack</h5>
+                <small class="text-muted" style="font-size: 0.75rem;">Business Intel</small>
+            </div>
+        </div>
+        
+        <div class="list-group list-group-flush mt-4">
+            <span class="sidebar-section-title">MAIN</span>
+            <a href="/dashboard/" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'dashboard' %}active{% endif %}">
+    <i class="fa-solid fa-border-all fa-fw me-2 {% if active_page == 'dashboard' %}text-success{% endif %}"></i> Dashboard
+</a>
+<a href="/sales" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'sales' %}active{% endif %}">
+    <i class="fa-solid fa-arrow-trend-up fa-fw me-2 {% if active_page == 'sales' %}text-success{% endif %}"></i> Sales
+</a>
+<a href="/expenses" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'expenses' %}active{% endif %}">
+    <i class="fa-solid fa-receipt fa-fw me-2 {% if active_page == 'expenses' %}text-success{% endif %}"></i> Expenses
+</a>
+<a href="/reports" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'reports' %}active{% endif %}">
+    <i class="fa-solid fa-file-invoice fa-fw me-2 {% if active_page == 'reports' %}text-success{% endif %}"></i> Reports
+</a>
+<a href="/health" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'health' %}active{% endif %}">
+    <i class="fa-solid fa-heart-pulse fa-fw me-2 {% if active_page == 'health' %}text-success{% endif %}"></i> Health Score
+</a>
+            <a href="/forecasting/" class="list-group-item list-group-item-action sidebar-link {% if active_page == 'forecasting' %}active{% endif %}">
+                <i class="fa-solid fa-chart-line fa-fw me-2 {% if active_page == 'forecasting' %}text-success{% endif %}"></i> Forecasting
+            </a>
+            <a href="#" class="list-group-item list-group-item-action sidebar-link">
+                <i class="fa-solid fa-sliders fa-fw me-2"></i> Scenario Sim
+            </a>
+        </div>
+        
+        <div class="sidebar-footer list-group list-group-flush position-absolute bottom-0 w-100" style="padding: 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); background-color: var(--bg-sidebar);">
+            {% if request.state.user %}
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 36px; height: 36px; font-size: 0.85rem; background: linear-gradient(135deg, #10b981, #059669) !important; flex-shrink: 0;">
+                    {{ request.state.user.full_name[0] | upper }}
+                </div>
+                <div class="overflow-hidden" style="line-height: 1.2;">
+                    <div class="text-white fw-semibold text-truncate" style="font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+                    <div class="text-muted text-truncate mb-1" style="font-size: 0.75rem; color: #a1a1aa !important;">{{ request.state.user.email }}</div>
+                    <span class="badge border rounded-pill" style="font-size: 0.65rem; color: #86efac !important; background-color: rgba(34, 197, 94, 0.15) !important; border-color: rgba(34, 197, 94, 0.3) !important; padding: 0.25em 0.6em;">
+                        <i class="fa-solid fa-user me-1"></i> User
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <a href="/auth/logout" class="list-group-item list-group-item-action sidebar-link" style="padding: 0.4rem 0.5rem; border-radius: 6px !important; color: rgba(255,255,255,0.6); background: transparent;">
+                <i class="fa-solid fa-right-from-bracket fa-fw me-2"></i> Sign Out
+            </a>
+        </div>
+    </div>
+    <!-- /#sidebar-wrapper -->
+
+    <!-- Page Content -->
+    <div id="page-content-wrapper" class="w-100">
+        <!-- Main Content Area -->
+        <div class="container-fluid p-4">
+            {% block content %}
+            <!-- Page specific content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+    <!-- /#page-content-wrapper -->
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/session.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Page specific JS -->
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
