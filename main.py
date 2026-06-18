@@ -67,7 +67,7 @@ import time, threading
 from collections import defaultdict, deque
 from fastapi.responses import JSONResponse
 
-MAX_REQUESTS_PER_MINUTE = 10          
+MAX_REQUESTS_PER_MINUTE = 100          
 WINDOW_SECONDS = 60                 
 
 _rate_store: defaultdict[str, deque[float]] = defaultdict(deque)
@@ -77,8 +77,13 @@ _rate_lock = threading.Lock()
 async def rate_limit_middleware(request: Request, call_next):
     """
     Limits each client IP to MAX_REQUESTS_PER_MINUTE requests per WINDOW_SECONDS.
-    Returns HTTP 429 if the limit is exceeded.
+    Returns HTTP 429 if the limit is exceeded.
+    Excludes static assets and favicon to prevent false positives.
     """
+    path = request.url.path
+    if path.startswith("/static") or path == "/favicon.ico":
+        return await call_next(request)
+
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
     with _rate_lock:
@@ -93,7 +98,7 @@ async def rate_limit_middleware(request: Request, call_next):
                 content={"detail": "Too many requests – rate limit exceeded."},
             )
     return await call_next(request)
-    return response
+
 
 
 @app.middleware("http")
