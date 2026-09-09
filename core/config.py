@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     supabase_key: str = ""
     # Service-role key for admin operations (password reset, user lookup)
     supabase_service_key: str = ""
+    gemini_api_key: str = ""
     # Comma-separated emails that always receive Admin role (e.g. your school account)
     admin_emails: str = "admin@biztrack.com"
 

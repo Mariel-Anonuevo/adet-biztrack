@@ -6,6 +6,22 @@ def calculate_health_metrics(sales_data: list, expenses_data: list) -> dict:
     Shared helper to compute identical, dynamic business health metrics
     from sales and expenses data.
     """
+    if not sales_data and not expenses_data:
+        return {
+            "score": 0,
+            "classification": "No Data",
+            "factors": {
+                "revenue_trend": 0,
+                "expense_ratio": 0,
+                "profit_margin": 0,
+                "cash_consistency": 0
+            },
+            "factor_labels": {
+                "revenue_trend": "No Data",
+                "expense_ratio": "No Data",
+            }
+        }
+
     total_sales = float(sum(r.get("amount", 0) for r in sales_data))
     total_expenses = float(sum(r.get("amount", 0) for r in expenses_data))
 
@@ -37,28 +53,49 @@ def calculate_health_metrics(sales_data: list, expenses_data: list) -> dict:
     # 4. Cash consistency (more months with data = better)
     cash_consistency_score = min(100, len(sorted_months) * 15)
 
-    # Overall weighted health score
+    # Overall weighted health score (matches frontend slider weights: Profitability 40%, Growth 25%, Stability 35%)
     current_score = int(
-        revenue_trend_score * 0.35 +
-        expense_ratio_score * 0.30 +
-        profit_margin_score * 0.20 +
-        cash_consistency_score * 0.15
+        profit_margin_score * 0.40 +
+        revenue_trend_score * 0.25 +
+        expense_ratio_score * 0.35
     )
 
     if current_score >= 70:
         classification = "Healthy"
-    elif current_score >= 45:
+    elif current_score >= 40:
         classification = "Stable"
     else:
         classification = "At Risk"
 
+    # Build human-readable labels for dashboard display
+    if revenue_trend_score >= 60:
+        revenue_trend_label = "Positive ↑"
+    elif revenue_trend_score >= 40:
+        revenue_trend_label = "Stable →"
+    else:
+        revenue_trend_label = "Declining ↓"
+
+    expense_ratio_pct = round(expense_ratio * 100, 1)
+    if expense_ratio_pct <= 60:
+        expense_ratio_label = f"{expense_ratio_pct}% — Good"
+    elif expense_ratio_pct <= 85:
+        expense_ratio_label = f"{expense_ratio_pct}% — High"
+    else:
+        expense_ratio_label = f"{expense_ratio_pct}% — Critical"
+
     return {
         "score": current_score,
         "classification": classification,
+        # Raw numeric scores used by health.js for slider recalculation
         "factors": {
             "revenue_trend": revenue_trend_score,
             "expense_ratio": expense_ratio_score,
             "profit_margin": profit_margin_score,
             "cash_consistency": cash_consistency_score
+        },
+        # Human-readable labels used by the dashboard display
+        "factor_labels": {
+            "revenue_trend": revenue_trend_label,
+            "expense_ratio": expense_ratio_label,
         }
     }

@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from routers import sales_router, dashboard_router, expenses_router, reports_router, health_router, auth_router, forecasting_router
+from routers import sales_router, dashboard_router, expenses_router, reports_router, health_router, auth_router, forecasting_router, scenario_router
 from core.auth import get_current_user, is_public_path, is_authenticated
 from core.navigation import is_direct_url_access, is_api_path, append_nav_param
 import os
@@ -33,12 +33,15 @@ app.include_router(expenses_router.router)
 app.include_router(reports_router.router)
 app.include_router(health_router.router)
 app.include_router(forecasting_router.router)
+app.include_router(scenario_router.router)
 
 
 
 
 def _wants_html(request: Request) -> bool:
     """Browsers and address-bar navigation prefer HTML error pages over raw JSON."""
+    if "/api/" in request.url.path:
+        return False
     accept = request.headers.get("accept", "")
     if "application/json" in accept and "text/html" not in accept:
         return False
@@ -113,28 +116,10 @@ async def require_login_middleware(request: Request, call_next):
         if "/api/" in path:
             return JSONResponse(
                 status_code=401,
-                content={"detail": "Security: Authentication required. You must sign in first."},
+                content={"detail": "Authentication required. Please sign in."},
             )
-        if _wants_html(request):
-            return templates.TemplateResponse(
-                request=request,
-                name="error.html",
-                context={
-                    "title": "Authentication Required",
-                    "heading": "Security: Authentication Required",
-                    "message": (
-                        "You cannot open this page directly without signing in. "
-                        "BizTrack blocks unauthorized URL access to protect financial data."
-                    ),
-                    "icon": "fa-shield-halved",
-                    "color": "warning",
-                    "status_code": 401,
-                    "action_url": "/auth/login",
-                    "action_label": "Go to Sign In",
-                },
-                status_code=401,
-            )
-        return JSONResponse(status_code=401, content={"detail": "Not authenticated"})
+        # For HTML page requests (including refreshes), redirect to login gracefully
+        return RedirectResponse(url="/auth/login", status_code=302)
 
     request.state.user = user
 
@@ -254,6 +239,33 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 
+@app.post("/api/upload-receipt")
+async def upload_receipt(file: UploadFile = File(...)):
+    """
+    Saves a receipt image or PDF file to static/uploads/receipts/ directory,
+    handling filename duplicates automatically.
+    """
+    from fastapi import UploadFile, File
+    import shutil
+    import os
+    
+    os.makedirs("static/uploads/receipts", exist_ok=True)
+    filename = file.filename.replace(" ", "_")
+    file_path = os.path.join("static/uploads/receipts", filename)
+    
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while os.path.exists(file_path):
+        filename = f"{base}_{counter}{ext}"
+        file_path = os.path.join("static/uploads/receipts", filename)
+        counter += 1
+        
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"filename": filename}
+
+
 @app.get("/", include_in_schema=False)
 async def root(request: Request):
     """
@@ -264,3 +276,8 @@ async def root(request: Request):
     return RedirectResponse(url="/auth/login")
 
 # Note: Swagger UI is automatically available at /docs
+# Touch to trigger uvicorn reload 5
+
+
+
+

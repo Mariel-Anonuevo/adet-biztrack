@@ -2,6 +2,8 @@ let gaugeChartInstance = null;
 let historyChartInstance = null;
 let healthFactorsCached = null;
 let healthHistoryCached = null;
+let healthClassificationCached = null;
+let healthScoreCached = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Bind Tuning Elements
@@ -41,6 +43,8 @@ async function fetchHealthData() {
         
         healthFactorsCached = data.factors;
         healthHistoryCached = data.history;
+        healthClassificationCached = data.classification;
+        healthScoreCached = data.current_score;
 
         recalculateScore();
         renderHistoryChart(data.history);
@@ -67,36 +71,23 @@ function updateSliderLabels() {
 function recalculateScore() {
     if (!healthFactorsCached) return;
 
-    const wProfit = parseFloat(document.getElementById('weightProfitability')?.value || 40);
-    const wGrowth = parseFloat(document.getElementById('weightGrowth')?.value || 30);
-    const wStability = parseFloat(document.getElementById('weightStability')?.value || 30);
-
-    const totalWeight = wProfit + wGrowth + wStability;
-    
-    let score = 0;
-    if (totalWeight > 0) {
-        score = Math.round(
-            (healthFactorsCached.profit_margin * wProfit +
-             healthFactorsCached.revenue_trend * wGrowth +
-             healthFactorsCached.expense_ratio * wStability) / totalWeight
-        );
-    } else {
-        // Fallback standard weights
-        score = Math.round(
-            healthFactorsCached.profit_margin * 0.40 +
-            healthFactorsCached.revenue_trend * 0.30 +
-            healthFactorsCached.expense_ratio * 0.30
-        );
+    if (healthClassificationCached === "No Data") {
+        renderCurrentScore(0, "No Data");
+        renderFactors(healthFactorsCached, true);
+        renderRecommendations(0, true);
+        return;
     }
+
+    const score = healthScoreCached !== undefined && healthScoreCached !== null ? healthScoreCached : 0;
 
     renderCurrentScore(score);
     renderFactors(healthFactorsCached);
     renderRecommendations(score);
 }
 
-function renderCurrentScore(score) {
-    document.getElementById('currentScoreValue').innerText = score;
-    
+function renderCurrentScore(score, classification) {
+    const isNoData = (classification === "No Data");
+
     // Choose status colors and badges based on criteria:
     // Green - Healthy (70-100), Yellow - Stable (40-69), Red - At Risk (0-39)
     let statusColor = '#ef4444'; // Red At Risk
@@ -106,20 +97,27 @@ function renderCurrentScore(score) {
     let alertIcon = 'fa-solid fa-triangle-exclamation text-danger';
     let trendColor = '#ef4444';
 
-    if (score >= 70) {
-        statusColor = '#00e676';
+    if (isNoData) {
+        statusColor = '#94a3b8'; // slate / gray
+        statusLabel = 'No Data';
+        badgeClass = 'bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50';
+        alertClass = 'alert-info bg-info bg-opacity-10 text-info-emphasis border-0';
+        alertIcon = 'fa-solid fa-circle-info text-info';
+        trendColor = '#94a3b8';
+    } else if (score >= 70) {
+        statusColor = '#10b981';
         statusLabel = 'Healthy';
         badgeClass = 'bg-success bg-opacity-25 text-success border border-success border-opacity-50';
         alertClass = 'alert-success bg-success bg-opacity-10 text-success border-0';
         alertIcon = 'fa-solid fa-circle-check text-success';
-        trendColor = '#00e676';
+        trendColor = '#10b981';
     } else if (score >= 40) {
-        statusColor = '#ffb300';
+        statusColor = '#f59e0b';
         statusLabel = 'Stable';
         badgeClass = 'bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50';
         alertClass = 'alert-warning bg-warning bg-opacity-10 text-warning-emphasis border-0';
         alertIcon = 'fa-solid fa-circle-info text-warning';
-        trendColor = '#ffb300';
+        trendColor = '#f59e0b';
     }
 
     // Set Dynamic Badge & Label
@@ -132,11 +130,12 @@ function renderCurrentScore(score) {
     const currentScoreValue = document.getElementById('currentScoreValue');
     if (currentScoreValue) {
         currentScoreValue.style.color = statusColor;
+        currentScoreValue.innerText = isNoData ? '--' : score;
     }
 
     const trendText = document.getElementById('trendText');
     if (trendText) {
-        trendText.innerText = score >= 50 ? 'Growing' : 'Declining';
+        trendText.innerText = isNoData ? 'No Trend' : (score >= 50 ? 'Growing' : 'Declining');
         trendText.style.color = trendColor;
     }
 
@@ -146,7 +145,9 @@ function renderCurrentScore(score) {
         alertBanner.className = `alert d-flex align-items-center justify-content-between gap-3 rounded-3 border-0 shadow-sm p-4 ${alertClass}`;
         
         let messageText = '';
-        if (score >= 70) {
+        if (isNoData) {
+            messageText = `Welcome to BizTrack! Record or upload transaction data under the Sales and Expenses tabs to compute your business health score.`;
+        } else if (score >= 70) {
             messageText = `Score is Healthy. Your metrics are strong, with optimum margins and steady growth patterns.`;
         } else if (score >= 40) {
             messageText = `Score is Stable. Ratios are standard, but opportunities exist to decrease administrative spend.`;
@@ -173,7 +174,7 @@ function renderCurrentScore(score) {
         type: 'doughnut',
         data: {
             datasets: [{
-                data: [score, 100 - score],
+                data: isNoData ? [0, 100] : [score, 100 - score],
                 backgroundColor: [statusColor, '#e5e7eb'],
                 borderWidth: 0,
                 cutout: '80%'
@@ -189,37 +190,43 @@ function renderCurrentScore(score) {
     });
 }
 
-function renderFactors(factors) {
+function renderFactors(factors, isNoData = false) {
     const container = document.getElementById('healthFactors');
     if (!container) return;
     
     const factorList = [
-        { label: "Profit margin (Profitability)", val: factors.profit_margin },
-        { label: "Revenue MoM (Growth)", val: factors.revenue_trend },
-        { label: "Expense Ratio (Stability)", val: factors.expense_ratio }
+        { label: "Profit margin (Profitability)", val: isNoData ? 0 : factors.profit_margin },
+        { label: "Revenue MoM (Growth)", val: isNoData ? 0 : factors.revenue_trend },
+        { label: "Expense Ratio (Stability)", val: isNoData ? 0 : factors.expense_ratio }
     ];
 
     container.innerHTML = factorList.map(f => {
-        const color = f.val >= 70 ? '#00e676' : (f.val >= 40 ? '#ffb300' : '#ff3d00');
+        const color = isNoData ? '#94a3b8' : (f.val >= 70 ? '#10b981' : (f.val >= 40 ? '#f59e0b' : '#ef4444'));
+        const valStr = isNoData ? '—' : `${f.val}/100`;
         return `
-        <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 py-3 align-items-center">
-            <div class="d-flex flex-column" style="width: 180px;">
-                <span class="text-secondary mb-1">${f.label}</span>
-                <div class="progress" style="height: 4px;">
-                    <div class="progress-bar" role="progressbar" style="width: ${f.val}%; background-color: ${color};" aria-valuenow="${f.val}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
+        <div class="py-3 border-bottom border-secondary border-opacity-10">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-secondary fw-semibold" style="font-size: 0.9rem;">${f.label}</span>
+                <span class="fw-bold" style="color: ${color}; font-size: 0.9rem;">${valStr}</span>
             </div>
-            <span class="fw-semibold">${f.val}/100</span>
+            <div class="progress rounded-pill" style="height: 6px; background-color: #f1f5f9;">
+                <div class="progress-bar rounded-pill" role="progressbar" style="width: ${f.val}%; background-color: ${color};" aria-valuenow="${f.val}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
         </div>
     `}).join('');
 }
 
-function renderRecommendations(score) {
+function renderRecommendations(score, isNoData = false) {
     const container = document.getElementById('healthRecommendations');
     if (!container) return;
 
     let recs = [];
-    if (score >= 70) {
+    if (isNoData) {
+        recs = [
+            { icon: "fa-solid fa-cloud-arrow-up text-secondary", title: "Upload Transactions", desc: "No data detected. Go to the Sales or Expenses page to upload or input your transaction records." },
+            { icon: "fa-solid fa-chart-bar text-secondary", title: "Calculate Metrics", desc: "Once data is entered, BizTrack AI will compute your real business health score and display details here." }
+        ];
+    } else if (score >= 70) {
         recs = [
             { icon: "fa-solid fa-rocket text-success", title: "Capital Expansion", desc: "Your margins are optimal. Consider expanding into new product lines or scaling services." },
             { icon: "fa-solid fa-vault text-success", title: "Reserve Allocation", desc: "Reinvest excess cash reserves into high-yield business savings to lock in stability." }
@@ -299,7 +306,7 @@ function renderMonthlyBreakdown(history) {
         else if (score >= 40) status = "Stable";
         else status = "At Risk";
 
-        const color = score >= 70 ? '#00e676' : (score >= 40 ? '#ffb300' : '#ff3d00');
+        const color = score >= 70 ? '#10b981' : (score >= 40 ? '#f59e0b' : '#ef4444');
         const textClass = score >= 70 ? 'text-success' : (score >= 40 ? 'text-warning' : 'text-danger');
         
         return `

@@ -2,72 +2,118 @@
  
 {% block content %}
 <!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-    <div class="d-flex align-items-center gap-2">
-        <div class="logo-icon text-white d-flex align-items-center justify-content-center rounded" style="width:36px; height:36px; background:linear-gradient(135deg, #22c55e, #16a34a);">
+<div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="logo-icon text-white d-flex align-items-center justify-content-center">
             <i class="fa-solid fa-heart-pulse"></i>
         </div>
         <h3 class="fw-bold mb-0 page-title">Health Score</h3>
     </div>
     <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-ai-badge rounded-pill d-flex align-items-center gap-1">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Active
-        </button>
-        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold">
-            {{ request.state.user.full_name[0] | upper }}
+        <div class="dropdown">
+            <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                {{ request.state.user.full_name[0] | upper }}
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+                    <div class="text-muted text-truncate" style="max-width: 150px; font-size: 0.75rem;">{{ request.state.user.email }}</div>
+                </li>
+                <li><a class="dropdown-item py-2 fw-semibold" href="/auth/profile" style="font-size: 0.85rem;"><i class="fa-solid fa-user-gear me-2 text-secondary"></i> My Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 fw-semibold text-danger" href="/auth/logout" style="font-size: 0.85rem;"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+            </ul>
         </div>
     </div>
 </div>
 
-<!-- Evaluation & Custom Tuning Section -->
+<!-- Evaluation & Parameters Section (read-only) -->
 <div class="bg-dark-card p-4 mb-4 rounded-3 shadow-sm" style="border: 1px solid var(--border-color);">
-    <h5 class="fw-bold mb-3">Health Score Parameters & Tuning</h5>
-    <div class="row g-4 align-items-center">
-        <!-- Evaluation Period Dropdown -->
-        <div class="col-lg-3 col-md-6">
-            <label for="evaluationPeriod" class="form-label small text-secondary fw-semibold">Evaluation Period</label>
-            <select id="evaluationPeriod" class="form-select rounded-3 shadow-sm py-2">
-                <option value="Monthly" selected>Monthly Assessment</option>
-                <option value="Quarterly">Quarterly Assessment</option>
-                <option value="Yearly">Yearly Assessment</option>
-            </select>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold mb-1">Health Score Parameters</h5>
+            <p class="page-subtitle mb-0">
+                <i class="fa-solid fa-lock me-1" style="font-size:.75rem;"></i>
+                AI-calculated weights &mdash; read only
+            </p>
         </div>
-        
-        <!-- Profitability Weight Slider -->
-        <div class="col-lg-2 col-md-6">
-            <label for="weightProfitability" class="form-label small text-secondary fw-semibold d-flex justify-content-between">
-                <span>Profitability</span>
-                <span id="labelProfitability" class="text-success fw-bold">40%</span>
-            </label>
-            <input type="range" class="form-range" id="weightProfitability" min="0" max="100" value="40" step="5">
-        </div>
-
-        <!-- Growth Weight Slider -->
-        <div class="col-lg-2 col-md-6">
-            <label for="weightGrowth" class="form-label small text-secondary fw-semibold d-flex justify-content-between">
-                <span>Growth</span>
-                <span id="labelGrowth" class="text-primary fw-bold">30%</span>
-            </label>
-            <input type="range" class="form-range" id="weightGrowth" min="0" max="100" value="30" step="5">
-        </div>
-
-        <!-- Stability Weight Slider -->
-        <div class="col-lg-2 col-md-6">
-            <label for="weightStability" class="form-label small text-secondary fw-semibold d-flex justify-content-between">
-                <span>Stability</span>
-                <span id="labelStability" class="text-warning fw-bold">30%</span>
-            </label>
-            <input type="range" class="form-range" id="weightStability" min="0" max="100" value="30" step="5">
-        </div>
-
-        <!-- Export Score Button -->
-        <div class="col-lg-3 col-md-6 text-lg-end text-start mt-lg-4 mt-3">
+        <div class="d-flex align-items-center gap-2">
+            <span style="
+                font-size:.75rem; font-weight:700; letter-spacing:.4px;
+                background:#f0fdf4; color:#16a34a;
+                border:1px solid #bbf7d0; border-radius:999px;
+                padding:4px 12px;
+            ">
+                <i class="fa-solid fa-wand-magic-sparkles me-1" style="font-size:.65rem;"></i>AI COMPUTED
+            </span>
             <button id="btnExportHealth" class="btn btn-success rounded-3 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
                 <i class="fa-solid fa-download"></i> Export Report
             </button>
         </div>
     </div>
+
+    <div class="row g-4 align-items-center">
+        <!-- Evaluation Period (locked) -->
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label small text-secondary fw-semibold mb-2">Evaluation Period</label>
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="font-size: 0.93rem; color: #374151; font-weight: 500; height: 42px; background: #f9fafb; border: 1px solid #d1d5db; cursor: not-allowed; opacity: 0.85;">
+                <i class="fa-regular fa-calendar-check text-secondary"></i>
+                Monthly Assessment
+            </div>
+            <!-- Keep hidden select for JS element selector -->
+            <select id="evaluationPeriod" class="d-none">
+                <option value="Monthly" selected>Monthly Assessment</option>
+            </select>
+        </div>
+
+        <!-- Profitability Weight (static progress bar) -->
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label small text-secondary fw-semibold d-flex justify-content-between mb-2">
+                <span>Profitability</span>
+                <span id="labelProfitability" class="text-success fw-bold">40%</span>
+            </label>
+            <div class="progress rounded-pill" style="height: 8px; background-color: #f3f4f6;">
+                <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: 40%;" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <input type="hidden" id="weightProfitability" value="40">
+        </div>
+
+        <!-- Growth Weight (static progress bar) -->
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label small text-secondary fw-semibold d-flex justify-content-between mb-2">
+                <span>Growth</span>
+                <span id="labelGrowth" class="text-primary fw-bold">25%</span>
+            </label>
+            <div class="progress rounded-pill" style="height: 8px; background-color: #f3f4f6;">
+                <div class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <input type="hidden" id="weightGrowth" value="25">
+        </div>
+
+        <!-- Stability Weight (static progress bar) -->
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label small text-secondary fw-semibold d-flex justify-content-between mb-2">
+                <span>Stability</span>
+                <span id="labelStability" class="text-warning fw-bold">35%</span>
+            </label>
+            <div class="progress rounded-pill" style="height: 8px; background-color: #f3f4f6;">
+                <div class="progress-bar bg-warning rounded-pill" role="progressbar" style="width: 35%;" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <input type="hidden" id="weightStability" value="35">
+        </div>
+
+        <!-- Lock notice -->
+        <div class="col-lg-3 col-md-12">
+            <div class="d-flex align-items-center gap-2 p-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0; height: 58px;">
+                <i class="fa-solid fa-lock" style="color:#6366f1; font-size:1rem; flex-shrink:0;"></i>
+                <span style="font-size:.76rem; color:#475569; line-height:1.45; font-weight: 500;">
+                    Weights are fixed by the AI scoring model and cannot be manually adjusted.
+                </span>
+            </div>
+        </div>
+    </div>
 </div>
+
 
 <div class="row g-4 mb-4">
     <!-- Current Health Score -->
@@ -81,9 +127,9 @@
             <div class="d-flex align-items-center gap-4 mb-5">
                 <div class="position-relative" style="width: 130px; height: 130px;">
                     <canvas id="healthScoreGauge"></canvas>
-                    <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
-                        <h2 class="mb-0 fw-bold" style="color: #f97316;" id="currentScoreValue">--</h2>
-                        <span class="small text-secondary">/100</span>
+                    <div class="position-absolute start-50 translate-middle text-center w-100" style="top: 55%;">
+                        <h2 class="mb-0 fw-bold" style="color: #f97316; font-size: 2rem; line-height: 1.1;" id="currentScoreValue">--</h2>
+                        <span class="small text-secondary" style="display: block; margin-top: 2px;">/100</span>
                     </div>
                 </div>
                 <div class="flex-grow-1">
@@ -148,5 +194,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/health.js"></script>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("Error: " + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "N/A"));
+    return false;
+};
+</script>
+<script src="/static/js/health.js?v=2"></script>
 {% endblock %}
