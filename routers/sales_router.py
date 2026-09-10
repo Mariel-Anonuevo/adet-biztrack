@@ -230,7 +230,7 @@ async def ask_ai_assistant(request: Request, query: dict):
         return {"reply": reply_text}
     except Exception as e:
         print(f"Gemini API query error: {e}")
-        return {"reply": f"Sorry, I encountered an error communicating with Gemini AI: {str(e)}"}
+        return {"reply": "Sorry, I encountered an internal error while communicating with Gemini AI. Please try again later."}
 
 
 @router.post("/api/upload")
