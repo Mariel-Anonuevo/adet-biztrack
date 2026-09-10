@@ -256,5 +256,5 @@ async def analyze_scenario(request: Request, params: ScenarioParams):
         return {"report": reply_text}
     except Exception as e:
         print(f"Gemini API simulation analysis error: {e}")
-        return {"report": f"Sorry, I encountered an error communicating with Gemini AI: {str(e)}"}
+        return {"report": "Sorry, I encountered an internal error communicating with Gemini AI. Please try again shortly."}
 
