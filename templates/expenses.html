@@ -2,14 +2,27 @@
 
 {% block content %}
 <!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-    <h3 class="fw-bold mb-0 page-title">Expenses</h3>
+<div class="page-header">
     <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-ai-badge rounded-pill d-flex align-items-center gap-1">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Active
-        </button>
-        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold">
-            {{ request.state.user.full_name[0] | upper }}
+        <div class="logo-icon text-white d-flex align-items-center justify-content-center">
+            <i class="fa-solid fa-receipt"></i>
+        </div>
+        <h3 class="fw-bold mb-0 page-title">Expenses</h3>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <div class="dropdown">
+            <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                {{ request.state.user.full_name[0] | upper }}
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+                    <div class="text-muted text-truncate" style="max-width: 150px; font-size: 0.75rem;">{{ request.state.user.email }}</div>
+                </li>
+                <li><a class="dropdown-item py-2 fw-semibold" href="/auth/profile" style="font-size: 0.85rem;"><i class="fa-solid fa-user-gear me-2 text-secondary"></i> My Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 fw-semibold text-danger" href="/auth/logout" style="font-size: 0.85rem;"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+            </ul>
         </div>
     </div>
 </div>
@@ -29,24 +42,47 @@
     <div class="tab-pane fade show active" id="pills-records" role="tabpanel">
 
         <!-- Filters -->
-        <div class="d-flex flex-column gap-3 mb-4">
-            <select class="form-select custom-select py-3 rounded-3 shadow-sm w-100">
-                <option selected>All months</option>
-                <option value="1">May</option>
-            </select>
-            <select class="form-select custom-select py-3 rounded-3 shadow-sm w-100">
-                <option selected>All categories</option>
-                <option value="1">Supplies</option>
-                <option value="2">Rent</option>
-            </select>
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-3">
+                <select class="form-select rounded-3 shadow-sm w-100" id="filterMonth">
+                    <option value="" selected>All months</option>
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <select class="form-select rounded-3 shadow-sm w-100" id="filterCategory">
+                    <option value="" selected>All categories</option>
+                    <option value="Supplies">Supplies</option>
+                    <option value="Rent">Rent</option>
+                    <option value="Salaries">Salaries</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Others">Others</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Export Btn -->
-        <div class="mb-4">
-            <button class="btn d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3 custom-export-btn">
+        <!-- Export & Import Buttons -->
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <button class="btn btn-success d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3" id="btnExportExpenses">
                 <i class="fa-solid fa-download"></i> Export CSV
             </button>
+            <label class="btn btn-success d-inline-flex align-items-center gap-2 px-4 py-2 rounded-3 mb-0" style="cursor: pointer;">
+                <i class="fa-solid fa-file-import"></i> Import Excel/CSV
+                <input type="file" id="btnImportExpenses" accept=".csv,.xlsx" style="display: none;">
+            </label>
         </div>
+
 
         <!-- Data Table -->
         <div class="table-card mb-3">
@@ -69,7 +105,10 @@
                 </table>
             </div>
         </div>
-        <div class="text-secondary small mb-5" id="recordCount">Loading records...</div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5">
+            <div class="text-secondary small" id="recordCount">Loading records...</div>
+            <div id="expensesPagination"></div>
+        </div>
     </div>
 
     <!-- Add Entry Tab -->
@@ -100,7 +139,15 @@
                             <option value="Rent">Rent</option>
                             <option value="Salaries">Salaries</option>
                             <option value="Utilities">Utilities</option>
+                            <option value="Others">Others</option>
                         </select>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4" id="expenseCustomCategoryGroup" style="display: none;">
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">
+                        <label for="expenseCustomCategory" class="form-label text-secondary fw-semibold">Custom Category Name</label>
+                        <input type="text" class="form-control py-2 rounded-3 shadow-sm" id="expenseCustomCategory" placeholder="e.g. Legal Fees">
                     </div>
                 </div>
                 <div class="row g-3 mb-4">
@@ -124,5 +171,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/expenses.js"></script>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("Error: " + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "N/A"));
+    return false;
+};
+</script>
+<script src="/static/js/expenses.js?v=4"></script>
 {% endblock %}

@@ -1,109 +1,146 @@
+/**
+ * sales.js — BizTrack Sales Page
+ * Handles: AI chat, form submit, records table, chart, delete, filtering, and pagination
+ */
+
+
+// ── Pagination and Filter state ─────────────────────────────────────────────
+const SALES_ROWS_PER_PAGE = 10;
+let currentSalesPage = 1;
+let allSalesRecords   = [];
+let filteredSalesRecords = [];
+let salesPickerInstance = null;
+let salesMinDate = "2020-01-01";
+
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // UI Elements
-    const aiBadge = document.getElementById('aiBadge');
-    const aiChatBox = document.getElementById('aiChatBox');
-    const aiSendBtn = document.getElementById('aiSendBtn');
-    const aiInput = document.getElementById('aiInput');
-    const chatMessages = document.querySelector('.chat-messages');
 
-    // Toggle AI Chat Box
-    aiBadge.addEventListener('click', () => {
-        aiChatBox.classList.toggle('d-none');
-    });
 
-    // Handle AI Send
-    aiSendBtn.addEventListener('click', async () => {
-        const question = aiInput.value.trim();
-        if(!question) return;
 
-        // Add user msg to chat
-        chatMessages.innerHTML += `<div class="p-2 mb-2 rounded w-75 ms-auto text-end" style="background:#ffffff; border:1px solid #22c55e; color:var(--text-primary);">${question}</div>`;
-        aiInput.value = '';
-
-        try {
-            const response = await authFetch('/sales/api/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question })
-            });
-            const data = await response.json();
-            
-            // Add AI response to chat
-            chatMessages.innerHTML += `<div class="ai-msg p-2 mb-2 rounded w-75">${data.reply}</div>`;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } catch (err) {
-            console.error("AI Error:", err);
-        }
-    });
-
-    // Set default date to today
+    // ── Date default ─────────────────────────────────────────────────────────
     const dateInput = document.getElementById('salesDate');
     if (dateInput) {
         const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
+        salesPickerInstance = flatpickr(dateInput, {
+            defaultDate: today < salesMinDate ? salesMinDate : today,
+            minDate: salesMinDate,
+            maxDate: today,
+            dateFormat: "Y-m-d",
+            disableMobile: true,
+            onChange: function(selectedDates, dateStr, instance) {
+                const minDate = salesMinDate;
+                if (dateStr < minDate) {
+                    showAlert(`Transaction date cannot be before January 1, 2020.`, 'Form Validation', 'error');
+                    instance.setDate(minDate);
+                } else if (dateStr > today) {
+                    showAlert('Transaction date cannot be in the future.', 'Form Validation', 'error');
+                    instance.setDate(today);
+                }
+            }
+        });
     }
 
-    // Cancel Button Action
+    // ── Custom Category Toggle ───────────────────────────────────────────────
+    const salesCategory = document.getElementById('salesCategory');
+    const salesCustomCategoryGroup = document.getElementById('salesCustomCategoryGroup');
+    const salesCustomCategory = document.getElementById('salesCustomCategory');
+    if (salesCategory && salesCustomCategoryGroup && salesCustomCategory) {
+        salesCategory.addEventListener('change', () => {
+            if (salesCategory.value === 'Others') {
+                salesCustomCategoryGroup.style.display = 'flex';
+                salesCustomCategory.setAttribute('required', 'true');
+            } else {
+                salesCustomCategoryGroup.style.display = 'none';
+                salesCustomCategory.removeAttribute('required');
+                salesCustomCategory.value = '';
+            }
+        });
+    }
+
+    // ── Cancel button ────────────────────────────────────────────────────────
     const cancelBtn = document.getElementById('btnCancelSales');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
             document.getElementById('addSalesForm').reset();
-            if (dateInput) {
-                dateInput.value = new Date().toISOString().split('T')[0];
+            if (salesCustomCategoryGroup) salesCustomCategoryGroup.style.display = 'none';
+            if (salesCustomCategory) {
+                salesCustomCategory.removeAttribute('required');
+                salesCustomCategory.value = '';
             }
+            if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
             const recordsTab = document.getElementById('pills-records-tab');
             if (recordsTab) recordsTab.click();
         });
     }
 
-    // Form submission
+    // ── Form submit ──────────────────────────────────────────────────────────
     const salesForm = document.getElementById('addSalesForm');
     if (salesForm) {
         salesForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const dateVal = document.getElementById('salesDate').value;
-            const amountVal = document.getElementById('salesAmount').value;
+
+            const dateVal        = document.getElementById('salesDate').value;
+            const amountVal      = document.getElementById('salesAmount').value;
             const descriptionVal = document.getElementById('salesDescription').value.trim();
-            const categoryVal = document.getElementById('salesCategory').value;
-            const receiptInput = document.getElementById('salesReceipt');
+            let categoryVal      = document.getElementById('salesCategory').value;
+            const receiptInput   = document.getElementById('salesReceipt');
 
-            // 1. Month/Year is empty check
-            if (!dateVal) {
-                alert("Error: Month/Year is empty. Please select a valid date.");
+            if (!dateVal) { showAlert('Date is empty.', 'Form Validation', 'error'); return; }
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (dateVal > todayStr) {
+                showAlert('Transaction date cannot be in the future.', 'Form Validation', 'error');
                 return;
             }
-
-            // 2. Non-numeric or empty amount check
             if (!amountVal || isNaN(amountVal) || parseFloat(amountVal) <= 0) {
-                alert("Error: Sales Amount must be a valid positive number.");
-                return;
+                showAlert('Sales Amount must be a valid positive number.', 'Form Validation', 'error'); return;
             }
-
-            // 3. Required fields validation
             if (!descriptionVal || !categoryVal) {
-                alert("Error: Please fill out all required fields.");
-                return;
+                showAlert('Please fill out all required fields (Description and Category).', 'Form Validation', 'error'); return;
+            }
+            if (categoryVal === 'Others') {
+                const customCat = salesCustomCategory ? salesCustomCategory.value.trim() : '';
+                if (!customCat) {
+                    showAlert('Please specify your custom category.', 'Form Validation', 'error');
+                    return;
+                }
+                categoryVal = customCat;
             }
 
             const saveBtn = document.getElementById('btnSaveSales');
             const originalBtnText = saveBtn.innerHTML;
             saveBtn.disabled = true;
-            saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...`;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
 
-            // Capture file name if provided
             let receiptName = null;
             if (receiptInput && receiptInput.files && receiptInput.files.length > 0) {
-                receiptName = receiptInput.files[0].name;
+                const receiptFile = receiptInput.files[0];
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', receiptFile);
+                
+                try {
+                    const uploadResponse = await authFetch('/api/upload-receipt', {
+                        method: 'POST',
+                        body: uploadFormData
+                    });
+                    if (!uploadResponse.ok) {
+                        throw new Error('Failed to upload receipt file.');
+                    }
+                    const uploadResult = await uploadResponse.json();
+                    receiptName = uploadResult.filename;
+                } catch (uploadErr) {
+                    console.error('Receipt upload error:', uploadErr);
+                    showAlert('Failed to upload receipt file: ' + uploadErr.message, 'Upload Error', 'error');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalBtnText;
+                    return;
+                }
             }
 
             const payload = {
-                date: dateVal,
-                amount: parseFloat(amountVal),
+                date:        dateVal,
+                amount:      parseFloat(amountVal),
                 description: descriptionVal,
-                category: categoryVal,
-                receipt: receiptName
+                category:    categoryVal,
+                receipt:     receiptName
             };
 
             try {
@@ -114,28 +151,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (!response.ok) {
-                    const errData = await response.json();
+                    const errData = await response.json().catch(() => ({}));
                     throw new Error(errData.detail || 'Failed to save sales record');
                 }
 
-                // Success
-                alert("Sales data saved successfully");
+                showAlert('Sales data saved successfully', 'Success');
                 salesForm.reset();
-                salesForm.classList.remove('was-validated');
-                if (dateInput) {
-                    dateInput.value = new Date().toISOString().split('T')[0];
+                if (salesCustomCategoryGroup) salesCustomCategoryGroup.style.display = 'none';
+                if (salesCustomCategory) {
+                    salesCustomCategory.removeAttribute('required');
+                    salesCustomCategory.value = '';
                 }
-                
-                // Show records tab
+                salesForm.classList.remove('was-validated');
+                if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
                 const recordsTab = document.getElementById('pills-records-tab');
                 if (recordsTab) recordsTab.click();
 
-                // Reload data
                 await fetchSalesData();
 
             } catch (err) {
-                console.error("Error saving sales record:", err);
-                alert(`Error: ${err.message}`);
+                console.error('Error saving sales record:', err);
+                showAlert(err.message, 'Error', 'error');
             } finally {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = originalBtnText;
@@ -143,81 +180,231 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Fetch Sales Records
+    // ── Bind Filter Selects ──────────────────────────────────────────────────
+    const filterMonth = document.getElementById('filterMonth');
+    const filterCategory = document.getElementById('filterCategory');
+    if (filterMonth) filterMonth.addEventListener('change', applyFilters);
+    if (filterCategory) filterCategory.addEventListener('change', applyFilters);
+
+    // ── Export CSV ───────────────────────────────────────────────────────────
+    const exportBtn = document.getElementById('btnExportSales');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            if (allSalesRecords.length === 0) {
+                showAlert('No sales records to export.', 'Export Error', 'error');
+                return;
+            }
+            function decodeHtmlEntities(str) {
+                if (!str) return '';
+                const txt = document.createElement("textarea");
+                txt.innerHTML = str;
+                return txt.value;
+            }
+            let csv = "Date,Description,Category,Amount,Receipt\n";
+            allSalesRecords.forEach(r => {
+                const desc = decodeHtmlEntities(r.description || '').replace(/"/g, '""');
+                const cat = decodeHtmlEntities(r.category || '').replace(/"/g, '""');
+                const rec = decodeHtmlEntities(r.receipt || '').replace(/"/g, '""');
+                csv += `${r.date},"${desc}","${cat}",${r.amount},"${rec}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "biztrack_sales_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // ── Import Excel/CSV ──────────────────────────────────────────────────────
+    const importInput = document.getElementById('btnImportSales');
+    if (importInput) {
+        importInput.addEventListener('change', async () => {
+            const file = importInput.files[0];
+            if (!file) return;
+
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'csv' && ext !== 'xlsx') {
+                showAlert('Please select a valid CSV or Excel (.xlsx) file.', 'Invalid File', 'error');
+                importInput.value = '';
+                return;
+            }
+
+            const confirmImport = await showConfirm(`Are you sure you want to import transactions from "${file.name}"?`, 'Confirm Import');
+            if (!confirmImport) {
+                importInput.value = '';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const tbody = document.getElementById('salesTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="spinner-border text-success me-2" role="status"></div>
+                                Importing transactions...
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                const response = await authFetch('/sales/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'Failed to import transactions');
+                }
+
+                const result = await response.json();
+                let msg = result.message || 'Import successful!';
+                if (result.warnings && result.warnings.length > 0) {
+                    msg += '\n\n⚠️ Warnings during parsing:\n' + result.warnings.slice(0, 8).map(w => '• ' + w).join('\n');
+                    if (result.warnings.length > 8) {
+                        msg += `\n... and ${result.warnings.length - 8} more warnings.`;
+                    }
+                }
+                await showAlert(msg, 'Import Completed');
+                await fetchSalesData();
+
+            } catch (err) {
+                console.error('Import error:', err);
+                showAlert(err.message, 'Import Error', 'error');
+                await fetchSalesData();
+            } finally {
+                importInput.value = '';
+            }
+        });
+    }
+
+    // Load records on page open
     fetchSalesData();
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data fetching
+// ─────────────────────────────────────────────────────────────────────────────
 
 function formatApiError(detail) {
     if (!detail) return 'Failed to load sales records.';
     if (typeof detail === 'string') return detail;
     if (detail.error_type === 'MISSING_TABLES') {
-        return 'Database tables are not set up in Supabase yet. Run db/create_tables.sql in your Supabase SQL Editor, or demo data will load automatically after refresh.';
+        return 'Database tables are not set up in Supabase yet. Run db/create_tables.sql in your Supabase SQL Editor.';
     }
     if (detail.message) return detail.message;
     return 'Failed to load sales records.';
 }
 
 async function fetchSalesData() {
-    const tbody = document.getElementById('salesTableBody');
+    const tbody       = document.getElementById('salesTableBody');
     const recordCount = document.getElementById('recordCount');
+
     try {
         const response = await authFetch('/sales/api/records');
-        const payload = await response.json().catch(() => ({}));
+        const payload  = await response.json().catch(() => ({}));
+
         if (!response.ok) {
             throw new Error(formatApiError(payload.detail));
         }
+
         const data = Array.isArray(payload) ? payload : [];
         renderTable(data);
-        if (data.length > 0) {
-            renderChart(data);
-        }
+
     } catch (error) {
-        console.error("Error fetching sales data:", error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center text-danger py-4">
-                    ${error.message || 'Failed to load records.'}
-                </td>
-            </tr>
-        `;
+        console.error('Error fetching sales data:', error);
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-danger py-4">
+                        <i class="fa-solid fa-circle-exclamation me-2"></i>${error.message || 'Failed to load records.'}
+                    </td>
+                </tr>
+            `;
+        }
         if (recordCount) recordCount.innerText = 'Could not load records';
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Table rendering and Filtering
+// ─────────────────────────────────────────────────────────────────────────────
+
 function renderTable(records) {
-    const tbody = document.getElementById('salesTableBody');
+    allSalesRecords = records || [];
+    applyFilters();
+}
+
+function applyFilters() {
+    const monthVal = document.getElementById('filterMonth')?.value;
+    const catVal = document.getElementById('filterCategory')?.value;
+
+    filteredSalesRecords = allSalesRecords.filter(record => {
+        // record.date is YYYY-MM-DD
+        const recordMonth = record.date ? record.date.split('-')[1] : '';
+        const matchMonth = !monthVal || recordMonth === monthVal;
+        const matchCat = !catVal || record.category === catVal;
+        return matchMonth && matchCat;
+    });
+
+    currentSalesPage = 1;
+    renderSalesPage();
+
+
+}
+
+function renderSalesPage() {
+    const tbody       = document.getElementById('salesTableBody');
     const recordCount = document.getElementById('recordCount');
-    
+    const records     = filteredSalesRecords;
+
     tbody.innerHTML = '';
-    
-    if(!records || records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No records found</td></tr>';
-        recordCount.innerText = "0 records total";
+
+    if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">No records found.</td></tr>';
+        if (recordCount) recordCount.innerText = '0 records total';
+        renderSalesPagination(0);
         return;
     }
 
-    records.forEach(record => {
-        // Format amount: ₱12,000
-        const formattedAmount = new Intl.NumberFormat('en-PH', { 
-            style: 'currency', 
-            currency: 'PHP',
-            minimumFractionDigits: 0
+    const totalPages = Math.ceil(records.length / SALES_ROWS_PER_PAGE);
+    currentSalesPage = Math.max(1, Math.min(currentSalesPage, totalPages));
+    const start = (currentSalesPage - 1) * SALES_ROWS_PER_PAGE;
+    const end   = Math.min(start + SALES_ROWS_PER_PAGE, records.length);
+    const pageRecords = records.slice(start, end);
+
+    pageRecords.forEach(record => {
+        const formattedAmount = new Intl.NumberFormat('en-PH', {
+            style: 'currency', currency: 'PHP', minimumFractionDigits: 0
         }).format(record.amount);
 
-        // Format Category Badge
-        const catClass = record.category.toLowerCase();
-        
-        // Format Receipt
+        const catClass = (record.category || '').toLowerCase();
+
         let receiptHtml = '<span class="text-secondary">—</span>';
-        if(record.receipt) {
+        if (record.receipt) {
+            const ext = record.receipt.split('.').pop().toLowerCase();
+            let iconClass = 'fa-file';
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                iconClass = 'fa-file-image';
+            } else if (ext === 'pdf') {
+                iconClass = 'fa-file-pdf';
+            }
             receiptHtml = `
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-regular fa-file receipt-icon"></i>
-                    <span class="text-secondary" style="font-size: 0.85rem">${record.receipt}</span>
-                </div>
+                <a href="javascript:void(0)" onclick="viewReceiptFile('${record.receipt}')" class="d-inline-flex align-items-center gap-2 text-decoration-none text-success receipt-link" style="transition: opacity 0.15s;">
+                    <i class="fa-regular ${iconClass} receipt-icon" style="font-size: 1.05rem;"></i>
+                    <span style="font-size: 0.85rem; font-weight: 500; text-decoration: underline;">${record.receipt}</span>
+                </a>
             `;
         }
 
+        const recordId = record.id;
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="ps-4 text-secondary">${record.date}</td>
@@ -226,60 +413,108 @@ function renderTable(records) {
             <td class="amount-text">${formattedAmount}</td>
             <td>${receiptHtml}</td>
             <td class="text-center pe-4">
-                <button class="btn-action"><i class="fa-regular fa-trash-can"></i></button>
+                <button class="btn-action" title="Delete record"
+                    ${recordId ? `onclick="deleteSalesRecord(${recordId})"` : 'disabled title="Cannot delete demo data"'}
+                ><i class="fa-regular fa-trash-can"></i></button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    recordCount.innerText = `${records.length} records total`;
+    if (recordCount) recordCount.innerText = `Showing ${start + 1}–${end} of ${records.length} records`;
+    renderSalesPagination(totalPages);
 }
 
-function renderChart(records) {
-    const chartSection = document.getElementById('chartSection');
-    chartSection.classList.remove('d-none'); // Show chart section
+function renderSalesPagination(totalPages) {
+    const container = document.getElementById('salesPagination');
+    if (!container) return;
 
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    // Sort records by date for the chart
-    const sortedRecords = [...records].sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    const labels = sortedRecords.map(r => r.date);
-    const dataPoints = sortedRecords.map(r => r.amount);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Sales Amount',
-                data: dataPoints,
-                borderColor: '#00e676',
-                backgroundColor: 'rgba(0, 230, 118, 0.1)',
-                borderWidth: 2,
-                pointBackgroundColor: '#181818',
-                pointBorderColor: '#00e676',
-                pointBorderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#a0a0a0' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#a0a0a0' }
-                }
-            }
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentSalesPage - Math.floor(maxVisible / 2));
+    let endPage   = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+    let html = '<ul class="pagination pagination-sm mb-0 flex-wrap">';
+
+    // Prev
+    html += `<li class="page-item ${currentSalesPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" onclick="goToSalesPage(${currentSalesPage - 1})">
+            <i class="fa-solid fa-chevron-left" style="font-size:.65rem;"></i>
+        </a></li>`;
+
+    if (startPage > 1) {
+        html += `<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="goToSalesPage(1)">1</a></li>`;
+        if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+        html += `<li class="page-item ${p === currentSalesPage ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" onclick="goToSalesPage(${p})">${p}</a></li>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+        html += `<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="goToSalesPage(${totalPages})">${totalPages}</a></li>`;
+    }
+
+    // Next
+    html += `<li class="page-item ${currentSalesPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" onclick="goToSalesPage(${currentSalesPage + 1})">
+            <i class="fa-solid fa-chevron-right" style="font-size:.65rem;"></i>
+        </a></li>`;
+
+    html += '</ul>';
+    container.innerHTML = html;
+}
+
+function goToSalesPage(page) {
+    const totalPages = Math.ceil(filteredSalesRecords.length / SALES_ROWS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+    currentSalesPage = page;
+    renderSalesPage();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete record  (must be global — called from onclick in table HTML)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function deleteSalesRecord(recordId) {
+    if (!await showConfirm('Are you sure you want to delete this sales record? This cannot be undone.', 'Confirm Delete')) return;
+
+    try {
+        const response = await authFetch(`/sales/api/records/${recordId}`, { method: 'DELETE' });
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to delete record');
         }
-    });
+        await fetchSalesData();
+        showAlert('Sales record deleted successfully.', 'Success');
+    } catch (err) {
+        console.error('Error deleting sales record:', err);
+        showAlert(err.message, 'Error', 'error');
+    }
 }
+
+// Global helper to view receipts with user-friendly existence checks
+window.viewReceiptFile = async function(filename) {
+    if (!filename) return;
+    const fileUrl = `/static/uploads/receipts/${filename}`;
+    try {
+        const res = await fetch(fileUrl, { method: 'HEAD' });
+        if (res.ok) {
+            window.open(fileUrl, '_blank');
+        } else {
+            showAlert(
+                `The receipt file "${filename}" is referenced in this record, but the actual file has not been uploaded to the server yet.`,
+                'Receipt Not Found',
+                'warning'
+            );
+        }
+    } catch (err) {
+        window.open(fileUrl, '_blank');
+    }
+};
+
+

@@ -15,6 +15,7 @@ class SessionUser:
     """Normalized session user with guaranteed metadata for templates and RBAC."""
     email: str
     user_metadata: dict
+    id: str = "mock-user-id"
 
     @property
     def role(self) -> str:
@@ -28,6 +29,8 @@ class SessionUser:
 def is_public_path(path: str) -> bool:
     if path == "/":
         return True
+    if path.startswith("/auth/profile") or path.startswith("/auth/api/update-profile") or path.startswith("/auth/api/change-password"):
+        return False
     return any(path.startswith(prefix) for prefix in PUBLIC_PREFIXES)
 
 
@@ -41,12 +44,14 @@ def _session_from_supabase_user(user) -> SessionUser:
     meta = raw_meta if isinstance(raw_meta, dict) else {}
     email = getattr(user, "email", None) or meta.get("email") or "user@biztrack.com"
     meta_role = meta.get("role")
+    user_id = getattr(user, "id", None) or "mock-user-id"
     return SessionUser(
         email=email,
         user_metadata={
             "full_name": meta.get("full_name") or meta.get("name") or email.split("@")[0],
             "role": resolve_role(email, meta_role),
         },
+        id=str(user_id)
     )
 
 
@@ -60,12 +65,16 @@ def get_current_user(request: Request) -> SessionUser | None:
         return None
 
     token = token.strip()
+    # Strip quotes if the browser/framework wrapped the cookie value in quotes
+    if token.startswith('"') and token.endswith('"'):
+        token = token[1:-1].strip()
 
     # Local/demo fallback: single standard user token
     if token == "mock-user-token":
         return SessionUser(
             email="user@biztrack.com",
             user_metadata={"full_name": "Standard User", "role": "User"},
+            id="mock-user-id"
         )
 
     supabase = get_supabase_client()
@@ -80,6 +89,7 @@ def get_current_user(request: Request) -> SessionUser | None:
     except Exception as e:
         print(f"[SECURE AUTH AUDIT] Token verification failed: {e}")
         return None
+
 
 
 def is_authenticated(request: Request) -> bool:

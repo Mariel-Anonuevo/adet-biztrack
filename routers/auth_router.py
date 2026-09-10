@@ -47,6 +47,15 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class UpdateProfileRequest(BaseModel):
+    full_name: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 # ---------------------------------------------------------------------------
 # Supabase admin client (service-role key required for password updates)
 # ---------------------------------------------------------------------------
@@ -520,3 +529,104 @@ async def api_reset_password(req: ResetPasswordRequest):
         raise HTTPException(status_code=500, detail="Password update failed. Please try again or contact support.")
 
     return JSONResponse(content={"message": "Your password has been reset successfully. You can now sign in with your new password."})
+
+
+# ---------------------------------------------------------------------------
+# Profile Management Routes
+# ---------------------------------------------------------------------------
+
+from core.auth import get_current_user
+from core.security import sanitize_html
+
+@router.get("/profile", response_class=HTMLResponse)
+async def read_profile(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={"title": "My Profile", "active_page": "profile"}
+    )
+
+
+@router.post("/api/update-profile")
+async def update_profile(request: Request, payload: UpdateProfileRequest):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    new_name = sanitize_html(payload.full_name.strip())
+    if len(new_name) < 2:
+        raise HTTPException(status_code=400, detail="Name must be at least 2 characters.")
+
+    token = request.cookies.get("access_token")
+    if token == "mock-user-token":
+        return {"message": "Profile updated successfully! (Demo Mode)"}
+
+    admin = _get_supabase_admin_client()
+    if admin is None:
+        return {"message": "Profile updated successfully! (Local Offline)"}
+
+    try:
+        users_page = admin.auth.admin.list_users()
+        target_user = next(
+            (u for u in users_page if getattr(u, "email", "").lower() == user.email.lower()),
+            None
+        )
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User account not found.")
+
+        admin.auth.admin.update_user_by_id(str(target_user.id), {"user_metadata": {"full_name": new_name}})
+        return {"message": "Profile updated successfully!"}
+    except Exception as e:
+        print(f"[SECURE AUDIT] Profile update error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update profile. Please try again.")
+
+
+@router.post("/api/change-password")
+async def change_password(request: Request, payload: ChangePasswordRequest):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    is_valid, error_msg = validate_password_strength(payload.new_password, user.email)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+
+    token = request.cookies.get("access_token")
+    if token == "mock-user-token":
+        if payload.current_password != "user123!":
+            raise HTTPException(status_code=400, detail="Incorrect current password.")
+        return {"message": "Password updated successfully! (Demo Mode)"}
+
+    supabase = get_supabase_client()
+    if supabase is None:
+        raise HTTPException(status_code=500, detail="Database not configured.")
+
+    try:
+        supabase.auth.sign_in_with_password({
+            "email": user.email,
+            "password": payload.current_password
+        })
+    except Exception:
+        raise HTTPException(status_code=400, detail="Incorrect current password.")
+
+    admin = _get_supabase_admin_client()
+    if admin is None:
+        raise HTTPException(status_code=500, detail="Supabase Admin key not configured.")
+
+    try:
+        users_page = admin.auth.admin.list_users()
+        target_user = next(
+            (u for u in users_page if getattr(u, "email", "").lower() == user.email.lower()),
+            None
+        )
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User account not found.")
+
+        admin.auth.admin.update_user_by_id(str(target_user.id), {"password": payload.new_password})
+        return {"message": "Password updated successfully!"}
+    except Exception as e:
+        print(f"[SECURE AUDIT] Profile password change error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update password. Please try again.")

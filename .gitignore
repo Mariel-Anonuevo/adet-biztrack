@@ -20,3 +20,11 @@ venv.bak/
 *.njsproj
 *.sln
 *.sw?
+
+# Scratch and test files
+scratch/
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+

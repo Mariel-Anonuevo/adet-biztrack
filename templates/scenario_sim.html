@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  /* Premium Slider Element overrides */
+  .slider-label-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+  .slider-title {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .slider-val-badge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 8px;
+    min-width: 62px;
+    text-align: right;
+  }
+  .sales-badge {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+  .expenses-badge {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  
+  .sim-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 99px;
+    background: var(--border-color);
+    outline: none;
+    margin-bottom: 1.25rem;
+  }
+  .sim-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    border: 2px solid #ffffff;
+    box-shadow: var(--shadow-sm);
+  }
+  .sim-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+  .sales-slider::-webkit-slider-thumb {
+    background: var(--accent-success);
+  }
+  .expense-slider::-webkit-slider-thumb {
+    background: var(--accent-danger);
+  }
+
+  /* Comparative KPI details */
+  .sim-kpi-label {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .sim-kpi-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+  }
+  .sim-kpi-val-main {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .sim-kpi-val-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .sim-kpi-diff-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .diff-up {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .diff-down {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .diff-neutral {
+    background: var(--border-light);
+    color: var(--text-secondary);
+  }
+
+  /* AI button overlay styling */
+  .btn-ai-generate {
+    background: linear-gradient(135deg, var(--accent-ai), var(--accent-ai-hover)) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  }
+  .btn-ai-generate:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+  }
+
+  .ai-report-content {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .ai-report-content h1, 
+  .ai-report-content h2, 
+  .ai-report-content h3 {
+    color: var(--text-primary);
+    font-weight: 800;
+    margin-top: 1.25rem;
+    margin-bottom: 0.6rem;
+  }
+  .ai-report-content h3 { font-size: 1.1rem; }
+  .ai-report-content ul {
+    padding-left: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+</style>
+
+<div>
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="logo-icon text-white d-flex align-items-center justify-content-center">
+        <i class="fa-solid fa-sliders"></i>
+      </div>
+      <div>
+        <div class="page-title">Scenario Simulator</div>
+        <div class="page-subtitle">Interactive real-time projections and custom decision modeling</div>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="dropdown">
+        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+          {{ request.state.user.full_name[0] | upper }}
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          <li class="px-3 py-2 border-bottom">
+            <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+            <div class="text-muted text-truncate" style="max-width: 150px; font-size: 0.75rem;">{{ request.state.user.email }}</div>
+          </li>
+          <li><a class="dropdown-item py-2 fw-semibold" href="/auth/profile" style="font-size: 0.85rem;"><i class="fa-solid fa-user-gear me-2 text-secondary"></i> My Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item py-2 fw-semibold text-danger" href="/auth/logout" style="font-size: 0.85rem;"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── KPI Overview Grid ── -->
+  <div class="row g-3 mb-4">
+    <!-- Avg Sales KPI -->
+    <div class="col-md-3 col-sm-6">
+      <div class="card p-4 h-100">
+        <span class="sim-kpi-label">Avg Projected Sales (Monthly)</span>
+        <div class="sim-kpi-row">
+          <span class="sim-kpi-val-main amount-positive" id="simKpiSalesMain">₱--</span>
+          <span class="sim-kpi-diff-badge diff-neutral" id="simKpiSalesDiff">0%</span>
+        </div>
+        <div class="sim-kpi-val-sub">Baseline: <span id="simKpiSalesBase">₱--</span></div>
+      </div>
+    </div>
+    <!-- Avg Expenses KPI -->
+    <div class="col-md-3 col-sm-6">
+      <div class="card p-4 h-100">
+        <span class="sim-kpi-label">Avg Projected Expenses (Monthly)</span>
+        <div class="sim-kpi-row">
+          <span class="sim-kpi-val-main amount-negative" id="simKpiExpensesMain">₱--</span>
+          <span class="sim-kpi-diff-badge diff-neutral" id="simKpiExpensesDiff">0%</span>
+        </div>
+        <div class="sim-kpi-val-sub">Baseline: <span id="simKpiExpensesBase">₱--</span></div>
+      </div>
+    </div>
+    <!-- Total Net Profit KPI -->
+    <div class="col-md-3 col-sm-6">
+      <div class="card p-4 h-100">
+        <span class="sim-kpi-label">6-Month Cumulative Profit</span>
+        <div class="sim-kpi-row">
+          <span class="sim-kpi-val-main text-primary" id="simKpiProfitMain">₱--</span>
+          <span class="sim-kpi-diff-badge diff-neutral" id="simKpiProfitDiff">₱0</span>
+        </div>
+        <div class="sim-kpi-val-sub">Baseline: <span id="simKpiProfitBase">₱--</span></div>
+      </div>
+    </div>
+    <!-- Net Margin KPI -->
+    <div class="col-md-3 col-sm-6">
+      <div class="card p-4 h-100">
+        <span class="sim-kpi-label">Projected Net Margin</span>
+        <div class="sim-kpi-row">
+          <span class="sim-kpi-val-main text-info" id="simKpiMarginMain">--%</span>
+          <span class="sim-kpi-diff-badge diff-neutral" id="simKpiMarginDiff">0%</span>
+        </div>
+        <div class="sim-kpi-val-sub">Baseline: <span id="simKpiMarginBase">--%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Interactive Sliders & Chart ── -->
+  <div class="row g-4 mb-4">
+    <!-- Left Column: Controls -->
+    <div class="col-lg-4">
+      <div class="card p-4 h-100">
+        <h5 class="fw-bold mb-1">Adjustment Levers</h5>
+        <p class="page-subtitle mb-4">Drag the sliders to simulate the impact on your 6-month forecast.</p>
+        
+        <!-- Lever 1: Sales Growth Offset -->
+        <div class="slider-label-wrap">
+          <span class="slider-title"><i class="fa-solid fa-arrow-trend-up text-success me-1"></i> Sales growth offset</span>
+          <span class="slider-val-badge sales-badge" id="valSalesGrowth">0%</span>
+        </div>
+        <input type="range" min="-50" max="50" value="0" class="sim-slider sales-slider" id="slideSalesGrowth">
+
+        <!-- Lever 2: Expense Growth Offset -->
+        <div class="slider-label-wrap">
+          <span class="slider-title"><i class="fa-solid fa-receipt text-danger me-1"></i> Expense growth offset</span>
+          <span class="slider-val-badge expenses-badge" id="valExpenseGrowth">0%</span>
+        </div>
+        <input type="range" min="-50" max="50" value="0" class="sim-slider expense-slider" id="slideExpenseGrowth">
+
+        <!-- Lever 3: Marketing Spend -->
+        <div class="slider-label-wrap">
+          <span class="slider-title"><i class="fa-solid fa-bullhorn text-primary me-1"></i> Additional monthly marketing</span>
+          <span class="slider-val-badge sales-badge" id="valMarketing">₱0</span>
+        </div>
+        <input type="range" min="0" max="200000" step="5000" value="0" class="sim-slider sales-slider" id="slideMarketing">
+
+        <!-- Lever 4: Hiring Spend -->
+        <div class="slider-label-wrap">
+          <span class="slider-title"><i class="fa-solid fa-user-plus text-primary me-1"></i> Additional monthly hiring</span>
+          <span class="slider-val-badge sales-badge" id="valHiring">₱0</span>
+        </div>
+        <input type="range" min="0" max="300000" step="10000" value="0" class="sim-slider sales-slider" id="slideHiring">
+
+        <!-- Reset Button -->
+        <button class="btn btn-outline-secondary w-100 mt-2 fw-semibold" id="btnResetSliders">
+          <i class="fa-solid fa-rotate-left me-1"></i> Reset sliders
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column: Visualization Chart -->
+    <div class="col-lg-8">
+      <div class="card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1">Scenario Projections</h5>
+            <p class="page-subtitle mb-0">Baseline forecast compared with simulated adjustments</p>
+          </div>
+          <div class="d-flex gap-3 align-items-center flex-wrap" style="font-size: 0.78rem;">
+            <span class="d-flex align-items-center gap-1 text-muted">
+              <span style="display:inline-block; width:12px; height:8px; background:#22c55e; opacity:0.3; border-radius:2px;"></span> Sales (base)
+            </span>
+            <span class="d-flex align-items-center gap-1 text-dark">
+              <span style="display:inline-block; width:12px; height:8px; background:#22c55e; border-radius:2px;"></span> Sales (simulated)
+            </span>
+            <span class="d-flex align-items-center gap-1 text-muted">
+              <span style="display:inline-block; width:12px; height:8px; background:#f87171; opacity:0.3; border-radius:2px;"></span> Expenses (base)
+            </span>
+            <span class="d-flex align-items-center gap-1 text-dark">
+              <span style="display:inline-block; width:12px; height:8px; background:#f87171; border-radius:2px;"></span> Expenses (simulated)
+            </span>
+          </div>
+        </div>
+        <div style="position:relative; height:340px; width:100%;">
+          <canvas id="scenarioChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI Strategic Analysis Section ── -->
+  <div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fa-solid fa-brain" style="color: var(--accent-ai); font-size: 1.25rem;"></i>
+        <div>
+          <h5 class="fw-bold mb-0">AI Scenario Strategy Analysis</h5>
+          <p class="page-subtitle mb-0">Generate a dynamic strategic advice report based on your simulated changes.</p>
+        </div>
+      </div>
+      <button class="btn btn-ai-generate d-inline-flex align-items-center gap-2" id="btnGenerateReport">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI Analysis
+      </button>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 Modal for AI Analysis Report -->
+  <div class="modal fade" id="aiReportModal" tabindex="-1" aria-labelledby="aiReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content" style="border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 12px 40px rgba(0,0,0,0.15);">
+        <div class="modal-header" style="background: linear-gradient(135deg, var(--accent-ai), var(--accent-ai-hover)); color: white; border-top-left-radius: 19px; border-top-right-radius: 19px; border-bottom: none; padding: 1.2rem 1.5rem;">
+          <h5 class="modal-title fw-bold" id="aiReportModalLabel">
+            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> AI Strategic Scenario Analysis
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="aiReportModalBody" style="background: #ffffff; max-height: 65vh; overflow-y: auto;">
+          <!-- Loader or Dynamic content populated by JS -->
+        </div>
+        <div class="modal-footer" style="border-top: none; background: var(--bg-main); border-bottom-left-radius: 19px; border-bottom-right-radius: 19px; padding: 0.8rem 1.5rem;">
+          <button type="button" class="btn btn-outline-secondary fw-semibold rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Render Markdown outputs nicely in AI reports -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/static/js/scenario_sim.js?v=3"></script>
+{% endblock %}

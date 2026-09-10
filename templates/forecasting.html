@@ -1,198 +1,736 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-    <div class="d-flex align-items-center gap-2">
-        <div class="logo-icon text-white d-flex align-items-center justify-content-center rounded"
-             style="width:36px; height:36px; background:linear-gradient(135deg, #6366f1, #4f46e5);">
-            <i class="fa-solid fa-chart-line"></i>
-        </div>
-        <h3 class="fw-bold mb-0 page-title">Forecasting</h3>
+<!-- Light theme scoped to forecasting page only -->
+<style>
+  /* ── Forecasting & Scenario Analysis light theme ─────────────────── */
+  #fc-page {
+    background: transparent;
+    padding: 0;
+  }
+
+  /* Header */
+  #fc-page .fc-header-border {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  #fc-page .fc-page-title    { color: #111827; font-weight: 700; font-size: 1.35rem; }
+  #fc-page .fc-page-subtitle { color: #6b7280; font-size: 0.85rem; }
+
+  /* Controls bar */
+  #fc-page .fc-controls {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  #fc-page .fc-label {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    display: block;
+    margin-bottom: .4rem;
+  }
+  #fc-page .fc-select {
+    background: #f9fafb !important;
+    border: 1px solid #d1d5db !important;
+    color: #111827 !important;
+    border-radius: 8px !important;
+    padding: .55rem .85rem;
+    font-size: 0.93rem;
+  }
+  #fc-page .fc-select:focus {
+    box-shadow: 0 0 0 2px rgba(34,197,94,.25) !important;
+    border-color: #22c55e !important;
+  }
+  #fc-page .btn-run {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .55rem 1.3rem;
+    font-weight: 600;
+    font-size: 0.93rem;
+    transition: opacity .15s;
+  }
+  #fc-page .btn-run:hover    { opacity: .88; }
+  #fc-page .btn-run:disabled { opacity: .5; cursor: not-allowed; }
+  #fc-page .btn-export {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    border-radius: 8px;
+    padding: .55rem 1.1rem;
+    font-weight: 600;
+    font-size: 0.93rem;
+    transition: all .15s;
+  }
+  #fc-page .fc-model-desc { color: #4b5563; font-size: 0.82rem; }
+
+  /* Confidence badge */
+  #fc-page #fcConfidenceBadge {
+    background: #f0fdf4 !important;
+    color: #16a34a !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 999px;
+    padding: .3rem .9rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  /* KPI Cards */
+  #fc-page .fc-kpi-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.2rem 1.3rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    transition: transform .15s, box-shadow .15s;
+  }
+  #fc-page .fc-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.08);
+  }
+  #fc-page .fc-kpi-label {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+  }
+  #fc-page .fc-kpi-icon {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.82rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  #fc-page .fc-kpi-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: .4rem 0 .2rem;
+  }
+  #fc-page .fc-kpi-sub { font-size: 0.78rem; color: #9ca3af; }
+
+  /* Premium Slider Elements */
+  #fc-page .slider-label-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+  #fc-page .slider-title {
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  #fc-page .slider-val-badge {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    min-width: 60px;
+    text-align: right;
+  }
+  #fc-page .sales-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+  }
+  #fc-page .expenses-badge {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+  
+  #fc-page .sim-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+    margin-bottom: 1.25rem;
+  }
+  #fc-page .sim-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  #fc-page .sim-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+  #fc-page .sales-slider::-webkit-slider-thumb {
+    background: #16a34a;
+  }
+  #fc-page .expense-slider::-webkit-slider-thumb {
+    background: #dc2626;
+  }
+
+  /* Scenario Results Comparison Table */
+  #fc-page .comparison-table {
+    font-size: 0.88rem;
+  }
+  #fc-page .comparison-table th {
+    background-color: #f9fafb;
+    color: #4b5563;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  #fc-page .comparison-table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  #fc-page .comparison-table tr:last-child td {
+    border-bottom: none;
+  }
+  #fc-page .diff-up {
+    color: #16a34a;
+    font-weight: 600;
+  }
+  #fc-page .diff-down {
+    color: #dc2626;
+    font-weight: 600;
+  }
+  #fc-page .diff-neutral {
+    color: #6b7280;
+  }
+
+  /* General Cards */
+  #fc-page .fc-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  #fc-page .fc-card-title { color: #111827; font-weight: 700; font-size: 1rem; margin-bottom: .2rem; }
+  #fc-page .fc-card-sub   { color: #6b7280; font-size: 0.8rem; }
+
+  /* Legend */
+  #fc-page .fc-legend-dot   { width: 24px; height: 3px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+  #fc-page .fc-legend-label { color: #374151; font-size: 0.8rem; }
+
+  /* AI Insight cards */
+  #fc-page .fc-insight {
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    display: flex;
+    gap: .85rem;
+    align-items: flex-start;
+  }
+  #fc-page .fc-insight-icon {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 0.85rem; flex-shrink: 0;
+  }
+  #fc-page .fc-insight-title { font-weight: 700; font-size: 0.88rem; margin-bottom: .2rem; }
+  #fc-page .fc-insight-text  { font-size: 0.8rem; color: #6b7280; line-height: 1.5; }
+
+  /* Table */
+  #fc-page .fc-table-wrap th {
+    color: #6b7280;
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: 1px solid #e5e7eb !important;
+    background: #f9fafb;
+    padding: .85rem .75rem;
+  }
+  #fc-page .fc-table-wrap td {
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
+    padding: .85rem .75rem;
+    font-size: 0.88rem;
+    vertical-align: middle;
+  }
+  #fc-page .fc-table-wrap tr:last-child td { border-bottom: none; }
+  #fc-page .fc-trend-up   { background: #f0fdf4; color: #16a34a; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+  #fc-page .fc-trend-down { background: #fef2f2; color: #dc2626; padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+
+  /* Scroll pill */
+  #fc-page .fc-scroll-pill {
+    position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    background: #fff; border: 1px solid #e5e7eb;
+    color: #6b7280; border-radius: 999px; padding: .35rem .75rem;
+    font-size: 0.78rem; cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; gap: .4rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    z-index: 10;
+  }
+  #fc-page .fc-scroll-pill:hover { color: #111827; border-color: #9ca3af; }
+
+  /* AI Strategic Generate Button */
+  #fc-page .btn-ai-generate {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.3rem;
+    font-weight: 600;
+    font-size: 0.93rem;
+    transition: opacity .15s, transform .15s;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+  }
+  #fc-page .btn-ai-generate:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+  #fc-page .btn-ai-generate:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Preset buttons styling */
+  .preset-btn {
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  
+  .health-projection-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .health-projection-item:last-child {
+    border-bottom: none;
+  }
+</style>
+
+<div id="fc-page">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="logo-icon text-white d-flex align-items-center justify-content-center">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+      <div>
+        <div class="fc-page-title">Forecasting &amp; Scenario Analysis</div>
+        <div class="fc-page-subtitle">Interactive forecasting, financial modeling, and strategy planning</div>
+      </div>
     </div>
     <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-ai-badge rounded-pill d-flex align-items-center gap-1" id="fcConfidenceBadge">
-            <i class="fa-solid fa-brain"></i> Confidence: <span id="fcConfidenceVal">--</span>%
-        </button>
-        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold">
-            {{ request.state.user.full_name[0] | upper }}
+      <button class="btn" id="fcConfidenceBadge" style="cursor:default;">
+        <i class="fa-solid fa-brain me-1"></i> Forecast Reliability: <span id="fcConfidenceVal">--</span>
+      </button>
+      <div class="dropdown">
+        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+          {{ request.state.user.full_name[0] | upper }}
         </div>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          <li class="px-3 py-2 border-bottom">
+            <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+            <div class="text-muted text-truncate" style="max-width: 150px; font-size: 0.75rem;">{{ request.state.user.email }}</div>
+          </li>
+          <li><a class="dropdown-item py-2 fw-semibold" href="/auth/profile" style="font-size: 0.85rem;"><i class="fa-solid fa-user-gear me-2 text-secondary"></i> My Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item py-2 fw-semibold text-danger" href="/auth/logout" style="font-size: 0.85rem;"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+        </ul>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Controls -->
-<div class="bg-dark-card p-4 mb-4 rounded-3 shadow-sm" style="border:1px solid var(--border-color);">
+  <!-- ── Controls ── -->
+  <div class="fc-controls mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-lg-4 col-md-6">
-            <label class="form-label small text-secondary fw-semibold">Forecast Horizon</label>
-            <select id="fcPeriods" class="form-select rounded-3">
-                <option value="3" selected>3 Months Ahead</option>
-                <option value="6">6 Months Ahead</option>
-                <option value="9">9 Months Ahead</option>
-                <option value="12">12 Months Ahead</option>
-            </select>
+      <div class="col-lg-5 col-md-6">
+        <label class="fc-label">Forecast Horizon</label>
+        <select id="fcPeriods" class="form-select fc-select w-100">
+          <option value="1">1 month ahead</option>
+          <option value="3" selected>3 months ahead</option>
+          <option value="6">6 months ahead</option>
+          <option value="12">12 months ahead</option>
+        </select>
+      </div>
+      <div class="col-lg-5 col-md-6">
+        <label class="fc-label">Forecasting Model</label>
+        <select id="fcModel" class="form-select fc-select w-100">
+          <option value="linear" selected>AI Forecast Model (Trend-based)</option>
+          <option value="moving_average">Recent Average Model</option>
+          <option value="exponential">Recent Growth-Weighted Model</option>
+        </select>
+      </div>
+      <div class="col-lg-2 col-md-12">
+        <button id="btnRunForecast" class="btn btn-run w-100 d-inline-flex align-items-center justify-content-center gap-2">
+          <i class="fa-solid fa-bolt"></i> Run forecast
+        </button>
+      </div>
+    </div>
+    
+    <!-- Model description banner -->
+    <div class="mt-3 pt-3 border-top d-flex align-items-center gap-2">
+      <i class="fa-solid fa-circle-info text-success" style="font-size: 0.95rem;"></i>
+      <span id="fcModelDesc" class="fc-model-desc">Expected trajectory based on your overall historical trend.</span>
+    </div>
+  </div>
+
+  <!-- ── KPI Cards ── -->
+  <div class="row g-3 mb-4">
+    <!-- Projected Health Score (Centerpiece) -->
+    <div class="col-lg-4 col-md-6 col-sm-12">
+      <div class="fc-kpi-card h-100" style="background: linear-gradient(135deg, #ffffff, #fcfdff); border: 2px solid #7c3aed; box-shadow: 0 4px 15px rgba(124,58,237,0.12);">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fc-kpi-icon" id="fcHealthIconWrap" style="background:linear-gradient(135deg,#7c3aed,#6366f1);">
+            <i class="fa-solid fa-heart-pulse"></i>
+          </div>
+          <span class="fc-kpi-label" style="font-size:0.75rem; font-weight:750; color:#4f46e5;">Business Health Score</span>
         </div>
-        <div class="col-lg-4 col-md-6">
-            <label class="form-label small text-secondary fw-semibold">Projection Model</label>
-            <select id="fcModel" class="form-select rounded-3">
-                <option value="linear" selected>Linear Regression</option>
-            </select>
+        <div class="d-flex align-items-baseline gap-2">
+          <div class="fc-kpi-value" id="fcAvgHealth" style="color:#7c3aed; font-size:2rem; margin:0;">--</div>
+          <span style="font-size: 0.95rem; color:#9ca3af; font-weight: 600;">/100</span>
         </div>
-        <div class="col-lg-4 col-md-12 text-lg-end">
-            <button id="btnRunForecast" class="btn btn-success rounded-3 px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2">
-                <i class="fa-solid fa-bolt"></i> Run Forecast
+        <div class="mt-2">
+          <span class="fw-bold" id="fcHealthStatus" style="font-size: 0.95rem;">Stable</span>
+        </div>
+      </div>
+    </div>
+    <!-- Expected Sales -->
+    <div class="col-lg-2 col-md-3 col-sm-6">
+      <div class="fc-kpi-card h-100">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fc-kpi-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </div>
+          <span class="fc-kpi-label" style="font-size:0.7rem;">Expected Sales</span>
+        </div>
+        <div class="fc-kpi-value" id="fcAvgSales" style="color:#22c55e; font-size:1.35rem;">₱--</div>
+        <div class="fc-kpi-sub">per month</div>
+      </div>
+    </div>
+    <!-- Expected Expenses -->
+    <div class="col-lg-2 col-md-3 col-sm-6">
+      <div class="fc-kpi-card h-100">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fc-kpi-icon" style="background:linear-gradient(135deg,#f97316,#ea580c);">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <span class="fc-kpi-label" style="font-size:0.7rem;">Expected Expenses</span>
+        </div>
+        <div class="fc-kpi-value" id="fcAvgExpenses" style="color:#ef4444; font-size:1.35rem;">₱--</div>
+        <div class="fc-kpi-sub">per month</div>
+      </div>
+    </div>
+    <!-- Expected Profit -->
+    <div class="col-lg-2 col-md-3 col-sm-6">
+      <div class="fc-kpi-card h-100">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fc-kpi-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <span class="fc-kpi-label" style="font-size:0.7rem;">Expected Profit</span>
+        </div>
+        <div class="fc-kpi-value" id="fcAvgProfit" style="color:#6366f1; font-size:1.35rem;">₱--</div>
+        <div class="fc-kpi-sub">per month</div>
+      </div>
+    </div>
+    <!-- Sales Trend -->
+    <div class="col-lg-2 col-md-3 col-sm-6">
+      <div class="fc-kpi-card h-100">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="fc-kpi-icon" id="fcTrendIconWrap" style="background:linear-gradient(135deg,#d97706,#b45309);">
+            <i class="fa-solid fa-minus" id="fcTrendIcon"></i>
+          </div>
+          <span class="fc-kpi-label" style="font-size:0.7rem;">Sales Trend</span>
+        </div>
+        <div class="fc-kpi-value" id="fcTrend" style="color:#d97706; font-size:1.35rem;">--</div>
+        <div class="fc-kpi-sub" id="fcGrowthPct">vs actual</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main Chart ── -->
+  <div class="fc-card mb-4" style="position:relative;">
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+      <div>
+        <div class="fc-card-title">Expected Sales &amp; Expenses</div>
+        <div class="fc-card-sub">Visual representation of expected path and future plans</div>
+      </div>
+      <div class="d-flex gap-3 align-items-center flex-wrap" style="font-size:0.8rem;">
+        <span class="d-flex align-items-center gap-2 fc-legend-label">
+          <span class="fc-legend-dot" style="background:#bbf7d0; height: 6px;"></span> Expected Sales
+        </span>
+        <span class="d-flex align-items-center gap-2 fc-legend-label">
+          <span class="fc-legend-dot" style="background:#22c55e; height: 6px;"></span> Simulated Sales
+        </span>
+        <span class="d-flex align-items-center gap-2 fc-legend-label">
+          <span class="fc-legend-dot" style="background:#fca5a5; height: 6px;"></span> Expected Expenses
+        </span>
+        <span class="d-flex align-items-center gap-2 fc-legend-label">
+          <span class="fc-legend-dot" style="background:#ef4444; height: 6px;"></span> Simulated Expenses
+        </span>
+      </div>
+    </div>
+    <div style="position:relative; height:360px; width:100%;">
+      <canvas id="forecastChart"></canvas>
+    </div>
+    <button class="fc-scroll-pill" onclick="document.getElementById('scenario-section').scrollIntoView({behavior:'smooth'})">
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+  </div>
+
+  <!-- ── Scenario Analysis Section ── -->
+  <div class="fc-card mb-4" id="scenario-section">
+    <div class="border-bottom pb-2 mb-3">
+      <h5 class="fw-bold mb-1 text-dark"><i class="fa-solid fa-sliders text-success me-2"></i>Business Planning</h5>
+      <p class="text-secondary small mb-0">Test different business plans and evaluate your future business performance.</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Left Column: Controls -->
+      <div class="col-lg-5 border-end pe-lg-4">
+        <!-- Scenario Presets -->
+        <div class="mb-4">
+          <label class="fc-label">Planning Presets</label>
+          <div class="btn-group w-100" role="group" aria-label="Scenario Presets">
+            <button type="button" class="btn btn-outline-warning preset-btn active" id="presetBaseline" data-sales="0" data-expenses="0">Current Trend</button>
+            <button type="button" class="btn btn-outline-success preset-btn" id="presetOptimistic" data-sales="15" data-expenses="5">Growth Plan</button>
+            <button type="button" class="btn btn-outline-danger preset-btn" id="presetPessimistic" data-sales="-10" data-expenses="10">Cost Increase</button>
+            <button type="button" class="btn btn-outline-secondary preset-btn" id="presetCustom">Custom</button>
+          </div>
+        </div>
+
+        <!-- Sales Growth Slider -->
+        <div class="mb-3">
+          <div class="slider-label-wrap">
+            <span class="slider-title"><i class="fa-solid fa-arrow-trend-up text-success me-1"></i> Sales Change (%)</span>
+            <span class="slider-val-badge sales-badge" id="valSalesChange">0%</span>
+          </div>
+          <input type="range" min="-100" max="100" value="0" class="sim-slider sales-slider" id="slideSalesChange">
+          <div class="d-flex justify-content-between text-secondary style" style="font-size: 0.72rem; margin-top: -10px;">
+            <span>-100%</span>
+            <span>-50%</span>
+            <span>0%</span>
+            <span>+50%</span>
+            <span>+100%</span>
+          </div>
+        </div>
+
+        <!-- Expenses Growth Slider -->
+        <div class="mb-4">
+          <div class="slider-label-wrap">
+            <span class="slider-title"><i class="fa-solid fa-receipt text-danger me-1"></i> Expenses Change (%)</span>
+            <span class="slider-val-badge expenses-badge" id="valExpensesChange">0%</span>
+          </div>
+          <input type="range" min="-100" max="100" value="0" class="sim-slider expense-slider" id="slideExpensesChange">
+          <div class="d-flex justify-content-between text-secondary" style="font-size: 0.72rem; margin-top: -10px;">
+            <span>-100%</span>
+            <span>-50%</span>
+            <span>0%</span>
+            <span>+50%</span>
+            <span>+100%</span>
+          </div>
+        </div>
+
+        <!-- Reset Button -->
+        <div class="row g-2">
+          <div class="col-6">
+            <button class="btn btn-outline-secondary w-100 fw-semibold btn-sm py-2" id="btnResetScenario">
+              <i class="fa-solid fa-rotate-left me-1"></i> Reset sliders
             </button>
-            <button id="btnExportForecast" class="btn rounded-3 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 ms-2"
-                    style="border:1px solid var(--border-color); color:var(--text-secondary); background:var(--bg-card);">
-                <i class="fa-solid fa-download"></i> Export
+          </div>
+          <div class="col-6">
+            <button class="btn btn-ai-generate w-100 btn-sm py-2 d-inline-flex align-items-center justify-content-center gap-1" id="btnOpenStrategicReport">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI Scenario Advice
             </button>
+          </div>
         </div>
-    </div>
-</div>
+      </div>
 
-<!-- KPI Cards -->
-<div class="row g-3 mb-4" id="fcKpiRow">
-    <!-- Projected Sales -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="rounded-circle d-flex align-items-center justify-content-center text-white"
-                      style="width:32px;height:32px;background:linear-gradient(135deg,#22c55e,#16a34a);font-size:0.85rem;">
-                    <i class="fa-solid fa-arrow-up-right-dots"></i>
-                </span>
-                <span class="small text-secondary fw-semibold">Avg Projected Sales</span>
-            </div>
-            <h4 class="fw-bold mb-0" id="fcAvgSales" style="color:#16a34a;">₱--</h4>
-            <div class="small text-secondary mt-1">per month</div>
+      <!-- Right Column: Comparative Table & Summary -->
+      <div class="col-lg-7 ps-lg-4">
+        <label class="fc-label">Compare Current Trend vs Future Plan</label>
+        <div class="table-responsive">
+          <table class="table comparison-table align-middle">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="text-end">Current Path</th>
+                <th class="text-end">Future Plan</th>
+                <th class="text-end">Difference</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-bold">Projected Sales</td>
+                <td class="text-end text-secondary" id="cellBaseSales">₱0</td>
+                <td class="text-end fw-semibold text-success" id="cellSimSales">₱0</td>
+                <td class="text-end" id="cellVarSales">--</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Projected Expenses</td>
+                <td class="text-end text-secondary" id="cellBaseExpenses">₱0</td>
+                <td class="text-end fw-semibold text-danger" id="cellSimExpenses">₱0</td>
+                <td class="text-end" id="cellVarExpenses">--</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Projected Profit</td>
+                <td class="text-end text-secondary" id="cellBaseProfit">₱0</td>
+                <td class="text-end fw-semibold" id="cellSimProfit" style="color: #6366f1;">₱0</td>
+                <td class="text-end" id="cellVarProfit">--</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Health Score</td>
+                <td class="text-end text-secondary" id="cellBaseHealth">--</td>
+                <td class="text-end fw-semibold" id="cellSimHealth">--</td>
+                <td class="text-end" id="cellVarHealth">--</td>
+              </tr>
+              <tr style="background-color: #fcfdfd;">
+                <td class="fw-bold text-success">Business Status</td>
+                <td class="text-end text-secondary" id="cellBaseStatus">--</td>
+                <td class="text-end fw-bold" id="cellSimStatus">--</td>
+                <td class="text-end text-muted">—</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
-    <!-- Projected Expenses -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="rounded-circle d-flex align-items-center justify-content-center text-white"
-                      style="width:32px;height:32px;background:linear-gradient(135deg,#f97316,#ea580c);font-size:0.85rem;">
-                    <i class="fa-solid fa-receipt"></i>
-                </span>
-                <span class="small text-secondary fw-semibold">Avg Projected Expenses</span>
-            </div>
-            <h4 class="fw-bold mb-0" id="fcAvgExpenses" style="color:#dc2626;">₱--</h4>
-            <div class="small text-secondary mt-1">per month</div>
-        </div>
-    </div>
-    <!-- Projected Profit -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="rounded-circle d-flex align-items-center justify-content-center text-white"
-                      style="width:32px;height:32px;background:linear-gradient(135deg,#6366f1,#4f46e5);font-size:0.85rem;">
-                    <i class="fa-solid fa-coins"></i>
-                </span>
-                <span class="small text-secondary fw-semibold">Avg Projected Profit</span>
-            </div>
-            <h4 class="fw-bold mb-0" id="fcAvgProfit">₱--</h4>
-            <div class="small text-secondary mt-1">per month</div>
-        </div>
-    </div>
-    <!-- Trend Direction -->
-    <div class="col-sm-6 col-xl-3">
-        <div class="stat-card h-100">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="rounded-circle d-flex align-items-center justify-content-center text-white"
-                      id="fcTrendIconWrap" style="width:32px;height:32px;background:linear-gradient(135deg,#d97706,#b45309);font-size:0.85rem;">
-                    <i class="fa-solid fa-minus" id="fcTrendIcon"></i>
-                </span>
-                <span class="small text-secondary fw-semibold">Revenue Trend</span>
-            </div>
-            <h4 class="fw-bold mb-0" id="fcTrend">--</h4>
-            <div class="small mt-1" id="fcGrowthPct" style="color:var(--text-secondary);">vs last actual month</div>
-        </div>
-    </div>
-</div>
+  </div>
 
-<!-- Forecast Chart -->
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="bg-dark-card p-4" style="border-radius:12px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <div>
-                    <h5 class="fw-bold mb-0">Revenue & Expense Projection</h5>
-                    <span class="small text-secondary">Historical data blended with forecast period</span>
-                </div>
-                <div class="d-flex gap-3 align-items-center flex-wrap">
-                    <span class="d-flex align-items-center gap-1 small">
-                        <span style="width:14px;height:3px;background:#22c55e;display:inline-block;border-radius:2px;"></span> Sales (actual)
-                    </span>
-                    <span class="d-flex align-items-center gap-1 small">
-                        <span style="width:14px;height:3px;background:#86efac;display:inline-block;border-radius:2px;border:1px dashed #16a34a;"></span> Sales (forecast)
-                    </span>
-                    <span class="d-flex align-items-center gap-1 small">
-                        <span style="width:14px;height:3px;background:#f97316;display:inline-block;border-radius:2px;"></span> Expenses (actual)
-                    </span>
-                    <span class="d-flex align-items-center gap-1 small">
-                        <span style="width:14px;height:3px;background:#fca5a5;display:inline-block;border-radius:2px;border:1px dashed #dc2626;"></span> Expenses (forecast)
-                    </span>
-                </div>
-            </div>
-            <div style="position:relative;height:340px;width:100%;">
-                <canvas id="forecastChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Profit Forecast + Recommendations -->
-<div class="row g-4 mb-4">
-    <!-- Profit Forecast Bar -->
+  <!-- ── Profit Chart + Dynamic AI Insights ── -->
+  <div class="row g-4 mb-4">
+    <!-- Profit Chart Card -->
     <div class="col-md-5">
-        <div class="bg-dark-card p-4 h-100" style="border-radius:12px;">
-            <h5 class="fw-bold mb-1">Profit Projection</h5>
-            <span class="small text-secondary mb-4 d-block">Forecast period breakdown</span>
-            <div style="position:relative;height:250px;">
-                <canvas id="profitForecastChart"></canvas>
-            </div>
+      <div class="fc-card h-100">
+        <div class="fc-card-title mb-1">Future Profit Estimate</div>
+        <div class="fc-card-sub mb-3">Expected profit compared to future plan</div>
+        <div style="position:relative; height:240px;">
+          <canvas id="profitForecastChart"></canvas>
         </div>
+      </div>
     </div>
 
-    <!-- Recommendations -->
+    <!-- Dynamic AI Insights Panel -->
     <div class="col-md-7">
-        <div class="bg-dark-card p-4 h-100" style="border-radius:12px;">
-            <h5 class="fw-bold mb-3">
-                <i class="fa-solid fa-lightbulb text-warning me-2"></i>AI Forecast Insights
-            </h5>
-            <div id="fcRecommendations" class="d-flex flex-column gap-3">
-                <!-- JS populated -->
-            </div>
+      <div class="fc-card h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-brain text-success"></i>
+            <div class="fc-card-title mb-0">Business Insights</div>
+          </div>
+          <span class="badge" id="badgeScenarioStatus" style="background-color:#dcfce7; color:#16a34a; font-weight:600; font-size:0.75rem; padding: 4px 10px; border-radius:999px;">Baseline</span>
         </div>
+        <div class="row g-3">
+          <div class="col-md-6 border-end pe-3">
+            <h6 class="text-secondary small fw-bold text-uppercase mb-2" style="font-size:0.7rem; letter-spacing:0.5px;">Performance Insights</h6>
+            <div id="dynamicInsights" class="d-flex flex-column gap-2" style="font-size: 0.82rem; color: #4b5563;">
+              <!-- Dynamic JS Populated -->
+            </div>
+          </div>
+          <div class="col-md-6 ps-3">
+            <h6 class="text-secondary small fw-bold text-uppercase mb-2" style="font-size:0.7rem; letter-spacing:0.5px;">Smart Actions</h6>
+            <div id="smartActionItems" class="d-flex flex-column gap-2" style="font-size: 0.82rem; color: #4b5563;">
+              <!-- Dynamic JS Populated -->
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Forecast Table -->
-<div class="bg-dark-card p-4 mb-4 rounded-3" style="border:1px solid var(--border-color);">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0">Forecast Detail Table</h5>
-        <span class="small text-secondary" id="fcTablePeriodLabel"></span>
+  <!-- ── Health Score Projection & Forecast Detail Table ── -->
+  <div class="row g-4 mb-4">
+    <!-- Month-by-month Health Projections -->
+    <div class="col-md-5">
+      <div class="fc-card h-100">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="fa-solid fa-heart-pulse text-danger"></i>
+          <div class="fc-card-title mb-0">Health Score Projection</div>
+        </div>
+        <div class="fc-card-sub mb-3">Month-by-month business health score prediction</div>
+        <div id="healthProjectionList" class="d-flex flex-column" style="font-size: 0.88rem; max-height:240px; overflow-y:auto; padding-right:5px;">
+          <!-- JS populated list -->
+        </div>
+        <div class="border-top pt-2 mt-2 text-secondary small d-flex justify-content-between" style="font-size:0.75rem;">
+          <span>Health Trend: <strong id="healthTrendText">Stable</strong></span>
+          <span id="healthTrendIcon"><i class="fa-solid fa-right-long text-warning"></i></span>
+        </div>
+      </div>
     </div>
-    <div class="table-responsive">
-        <table class="table custom-table mb-0">
-            <thead class="table-header">
-                <tr>
-                    <th>Month</th>
-                    <th>Projected Sales</th>
-                    <th>Projected Expenses</th>
-                    <th>Projected Profit</th>
-                    <th>Margin</th>
-                    <th>Status</th>
-                </tr>
+
+    <!-- Forecast Detail Table -->
+    <div class="col-md-7">
+      <div class="fc-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="fc-card-title">Detailed Forecast Table</div>
+          <span class="fc-kpi-label" id="fcTablePeriodLabel" style="font-size:0.75rem;"></span>
+        </div>
+        <div class="table-responsive fc-table-wrap" style="max-height: 220px; overflow-y: auto;">
+          <table class="table mb-0" style="--bs-table-bg:transparent;">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Projected Sales</th>
+                <th>Projected Expenses</th>
+                <th>Projected Profit</th>
+                <th>Status</th>
+              </tr>
             </thead>
             <tbody id="fcTableBody">
-                <tr><td colspan="6" class="text-center text-secondary py-4">Click <strong>Run Forecast</strong> to generate projections.</td></tr>
+              <tr><td colspan="5" class="text-center py-4" style="color:#475569;">
+                Click <strong style="color:#94a3b8;">Run forecast</strong> to generate projections.
+              </td></tr>
             </tbody>
-        </table>
+          </table>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+
+  <!-- Bootstrap 5 Modal for AI Analysis Report -->
+  <div class="modal fade" id="aiReportModal" tabindex="-1" aria-labelledby="aiReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content" style="border-radius: 16px; border: 1px solid rgba(124, 58, 237, 0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <div class="modal-header" style="background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; border-bottom: none; padding: 1.2rem 1.5rem;">
+          <h5 class="modal-title fw-bold" id="aiReportModalLabel">
+            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> AI Strategic Planning Advice
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="aiReportModalBody" style="background: #fff; max-height: 60vh; overflow-y: auto;">
+          <!-- Loader or Dynamic content populated by JS -->
+        </div>
+        <div class="modal-footer" style="border-top: none; background: #f9fafb; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; padding: 0.8rem 1.5rem;">
+          <button type="button" class="btn btn-secondary fw-semibold rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#fc-page -->
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/forecasting.js"></script>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("Error: " + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "N/A"));
+    return false;
+};
+</script>
+<!-- Render Markdown outputs nicely in AI reports -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/static/js/forecasting.js?v=6"></script>
 {% endblock %}

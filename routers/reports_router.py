@@ -25,18 +25,31 @@ async def get_historical_records(request: Request):
     🔒 RBAC SECURITY CONTROL: Restricts data extraction strictly to System Administrators.
     """
     # RBAC removed: allow access to reports for authenticated users
+    user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
     supabase = get_supabase_client()
 
     if supabase:
         try:
-            sales_res = supabase.table('sales').select("*").order("date", desc=True).execute()
-            expenses_res = supabase.table('expenses').select("*").order("date", desc=True).execute()
+            try:
+                sales_res = supabase.table('sales').select("*").eq("user_id", user.id).neq("is_deleted", True).order("date", desc=True).execute()
+                expenses_res = supabase.table('expenses').select("*").eq("user_id", user.id).neq("is_deleted", True).order("date", desc=True).execute()
+            except Exception as ex:
+                err = str(ex)
+                if "is_deleted" in err.lower() or "42703" in err:
+                    print("[Reports] 'is_deleted' column missing — retrying query without it.")
+                    sales_res = supabase.table('sales').select("*").eq("user_id", user.id).order("date", desc=True).execute()
+                    expenses_res = supabase.table('expenses').select("*").eq("user_id", user.id).order("date", desc=True).execute()
+                else:
+                    raise ex
 
             records = []
 
             for r in (sales_res.data or []):
                 records.append({
+                    "date": r.get("date", "")[:10],
                     "month": r.get("date", "")[:7],
                     "type": "Sale",
                     "description": r.get("description", ""),
@@ -46,6 +59,7 @@ async def get_historical_records(request: Request):
 
             for r in (expenses_res.data or []):
                 records.append({
+                    "date": r.get("date", "")[:10],
                     "month": r.get("date", "")[:7],
                     "type": "Expense",
                     "description": r.get("description", ""),
@@ -61,19 +75,31 @@ async def get_historical_records(request: Request):
             from core.db_error_handler import handle_db_error
             handle_db_error(e)
     else:
-        # Fallback mock data for local presentation/testing
-        return [
-            {"month": "2026-05", "type": "Sale", "description": "Online orders", "category": "Online", "amount": 8500},
-            {"month": "2026-05", "type": "Expense", "description": "Staff salaries", "category": "Salaries", "amount": 13500},
-            {"month": "2026-05", "type": "Sale", "description": "Product batch A", "category": "Product", "amount": 12000},
-            {"month": "2026-05", "type": "Expense", "description": "Monthly supplies", "category": "Supplies", "amount": 18500},
-            {"month": "2026-05", "type": "Expense", "description": "Office rent", "category": "Rent", "amount": 15000},
-            {"month": "2026-04", "type": "Sale", "description": "Service consultation", "category": "Service", "amount": 15000},
-            {"month": "2026-04", "type": "Sale", "description": "Product batch B", "category": "Product", "amount": 9700},
-            {"month": "2026-04", "type": "Expense", "description": "Utility bills", "category": "Utilities", "amount": 8000},
-            {"month": "2026-03", "type": "Sale", "description": "Wholesale deal", "category": "Online", "amount": 19000},
-            {"month": "2026-03", "type": "Expense", "description": "Supplies restock", "category": "Supplies", "amount": 6500}
-        ]
+        # Fallback mock data for local presentation/testing dynamically excluding soft-deleted items
+        records = []
+        from core.db_fallback import MOCK_SALES, MOCK_EXPENSES
+        for r in MOCK_SALES:
+            if not r.get("is_deleted"):
+                records.append({
+                    "date": r.get("date", "")[:10],
+                    "month": r.get("date", "")[:7],
+                    "type": "Sale",
+                    "description": r.get("description", ""),
+                    "category": r.get("category", ""),
+                    "amount": r.get("amount", 0)
+                })
+        for r in MOCK_EXPENSES:
+            if not r.get("is_deleted"):
+                records.append({
+                    "date": r.get("date", "")[:10],
+                    "month": r.get("date", "")[:7],
+                    "type": "Expense",
+                    "description": r.get("description", ""),
+                    "category": r.get("category", ""),
+                    "amount": r.get("amount", 0)
+                })
+        records.sort(key=lambda x: x["month"], reverse=True)
+        return records
 
 @router.get("/api/backup/export")
 async def export_database_backup(request: Request):
@@ -82,6 +108,8 @@ async def export_database_backup(request: Request):
     Supports system Availability (CIA Triad) and is strictly restricted to Administrators.
     """
     user = getattr(request.state, "user", None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     # RBAC removed: allow export for authenticated users
 
     supabase = get_supabase_client()
@@ -90,8 +118,8 @@ async def export_database_backup(request: Request):
 
     if supabase:
         try:
-            sales_res = supabase.table('sales').select("*").execute()
-            expenses_res = supabase.table('expenses').select("*").execute()
+            sales_res = supabase.table('sales').select("*").eq("user_id", user.id).execute()
+            expenses_res = supabase.table('expenses').select("*").eq("user_id", user.id).execute()
             sales_data = sales_res.data or []
             expenses_data = expenses_res.data or []
         except Exception as e:
@@ -114,9 +142,10 @@ async def export_database_backup(request: Request):
             {"date": "2026-03-01", "description": "Supplies restock", "category": "Supplies", "vendor": "ABC Supply Co.", "amount": 6500}
         ]
 
+    from datetime import datetime, timezone
     backup_payload = {
         "backup_version": "1.0.0",
-        "export_timestamp": "2026-05-26T12:47:15+08:00",
+        "export_timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
         "exported_by": user.email,
         "integrity_checksum_sha256": "8f3c2b1d0e5a6c7b8d9e0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v",
         "record_counts": {

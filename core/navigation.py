@@ -61,6 +61,7 @@ def is_direct_url_access(request: Request) -> bool:
     return True
 
 
+
 def append_nav_param(path: str) -> str:
     """No-op. Returning path as-is since nav params are removed."""
     return path

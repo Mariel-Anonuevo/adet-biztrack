@@ -29,6 +29,12 @@ def handle_db_error(e: Exception):
             }
         )
         
+    if "42703" in err_msg or "user_id" in err_msg:
+        raise HTTPException(
+            status_code=400,
+            detail="The database schema is outdated. Please run the SQL migration script (db/add_user_id.sql) in your Supabase SQL Editor to add the 'user_id' column."
+        )
+        
     # Print detailed error on the server side for secure auditing & debugging
     print(f"[SECURE DB AUDIT] Detailed Database Exception Blocked: {err_msg}")
     

@@ -2,55 +2,55 @@
 
 {% block content %}
 <!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-    <div class="d-flex align-items-center gap-2">
-        <div class="logo-icon text-white d-flex align-items-center justify-content-center rounded" style="width:36px; height:36px; background:linear-gradient(135deg, #22c55e, #16a34a);">
-            <i class="fa-solid fa-chart-line"></i>
+<div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        <div class="logo-icon text-white d-flex align-items-center justify-content-center">
+            <i class="fa-solid fa-border-all"></i>
         </div>
-        <h3 class="fw-bold mb-0 page-title" id="dashboardTitle">BizTrack Dashboard</h3>
+        <h3 class="fw-bold mb-0 page-title" id="dashboardTitle">Dashboard</h3>
     </div>
     <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-ai-badge rounded-pill d-flex align-items-center gap-1">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Active
-        </button>
-        <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold">
-            {{ request.state.user.full_name[0] | upper }}
+        <div class="dropdown">
+            <div class="user-avatar rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                {{ request.state.user.full_name[0] | upper }}
+            </div>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li class="px-3 py-2 border-bottom">
+                    <div class="fw-bold text-truncate" style="max-width: 150px; font-size: 0.85rem;">{{ request.state.user.full_name }}</div>
+                    <div class="text-muted text-truncate" style="max-width: 150px; font-size: 0.75rem;">{{ request.state.user.email }}</div>
+                </li>
+                <li><a class="dropdown-item py-2 fw-semibold" href="/auth/profile" style="font-size: 0.85rem;"><i class="fa-solid fa-user-gear me-2 text-secondary"></i> My Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 fw-semibold text-danger" href="/auth/logout" style="font-size: 0.85rem;"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+            </ul>
         </div>
     </div>
 </div>
 
-<!-- Filter & Action Bar -->
-<div class="bg-dark-card p-3 mb-4 rounded-3 shadow-sm" style="border: 1px solid var(--border-color);">
+<!-- Filter Bar -->
+<div class="card p-4 mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label for="startDate" class="form-label small text-secondary fw-semibold">Start Date</label>
-            <input type="date" id="startDate" class="form-control rounded-3 shadow-sm">
+        <div class="col-md-4">
+            <label for="startDate" class="form-label small text-secondary fw-bold">Start Date</label>
+            <input type="date" id="startDate" class="form-control">
         </div>
-        <div class="col-md-3">
-            <label for="endDate" class="form-label small text-secondary fw-semibold">End Date</label>
-            <input type="date" id="endDate" class="form-control rounded-3 shadow-sm">
+        <div class="col-md-4">
+            <label for="endDate" class="form-label small text-secondary fw-bold">End Date</label>
+            <input type="date" id="endDate" class="form-control">
         </div>
-        <div class="col-md-3">
-            <label for="analysisType" class="form-label small text-secondary fw-semibold">Analysis Type</label>
-            <select id="analysisType" class="form-select rounded-3 shadow-sm">
-                <option value="Growth" selected>Growth (Revenue & Spend)</option>
-                <option value="Profitability">Profitability (Net Profit)</option>
-                <option value="Stability">Stability (Operations & Ratios)</option>
-            </select>
-        </div>
-        <div class="col-md-3 d-flex gap-2 justify-content-md-end justify-content-start">
-            <button id="btnExportDashboard" class="btn btn-success rounded-3 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
-                <i class="fa-solid fa-download"></i> Export
-            </button>
-            <button id="btnPrintDashboard" onclick="window.print()" class="btn btn-outline-secondary rounded-3 px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
-                <i class="fa-solid fa-print"></i> Print
-            </button>
+        <div class="col-md-4">
+            <label class="form-label small text-secondary fw-bold">Analysis Type</label>
+            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="font-size: 0.93rem; color: #374151; font-weight: 500; height: 42px; background: #f9fafb; border: 1px solid #d1d5db; cursor: not-allowed; opacity: 0.85;">
+                <i class="fa-solid fa-chart-line text-secondary"></i>
+                Growth (Revenue & Spend)
+            </div>
+            <input type="hidden" id="analysisType" value="Growth">
         </div>
     </div>
 </div>
 
 <!-- Alert Banner -->
-<div id="healthAlertBanner" class="alert d-flex align-items-center gap-3 mb-4 rounded-3 border-0 shadow-sm d-none" role="alert">
+<div id="healthAlertBanner" class="alert d-flex align-items-center gap-3 mb-4 d-none" role="alert">
     <!-- Populated by JS -->
 </div>
 
@@ -58,41 +58,71 @@
 <div class="row g-4 mb-4" id="summaryCards">
     <!-- Populated by JS -->
     <div class="col-md-3">
-        <div class="stat-card d-flex align-items-center justify-content-center" style="min-height:100px;">
+        <div class="stat-card d-flex align-items-center justify-content-center">
             <div class="spinner-border text-success" role="status"></div>
         </div>
+    </div>
+</div>
+
+<!-- ── Forecast Preview Chart ── -->
+<div class="card p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold mb-1">Revenue &amp; Expense Projection</h5>
+            <p class="page-subtitle mb-0">Historical data blended with 3-month AI forecast</p>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <span class="d-flex align-items-center gap-2" style="font-size:.8rem; color:#6b7280;">
+                <span style="width:12px;height:12px;background:#22c55e;display:inline-block;border-radius:50%;"></span> Sales (actual)
+            </span>
+            <span class="d-flex align-items-center gap-2" style="font-size:.8rem; color:#6b7280;">
+                <span style="width:16px;height:0;border-top:2.5px dashed #22c55e;display:inline-block;"></span> Sales (forecast)
+            </span>
+            <span class="d-flex align-items-center gap-2" style="font-size:.8rem; color:#6b7280;">
+                <span style="width:12px;height:12px;background:#f97316;display:inline-block;border-radius:50%;"></span> Expenses (actual)
+            </span>
+            <span class="d-flex align-items-center gap-2" style="font-size:.8rem; color:#6b7280;">
+                <span style="width:16px;height:0;border-top:2.5px dashed #f97316;display:inline-block;"></span> Expenses (forecast)
+            </span>
+            <a href="/forecasting/" class="btn btn-sm btn-outline-success rounded-pill px-3" style="font-size:.78rem;">
+                <i class="fa-solid fa-chart-line me-1"></i> Full Forecast
+            </a>
+        </div>
+    </div>
+    <div style="position:relative; height:320px; width:100%;">
+        <canvas id="forecastPreviewChart"></canvas>
     </div>
 </div>
 
 <div class="row g-4 mb-4">
     <!-- Monthly Trend Chart -->
     <div class="col-md-8">
-        <div class="bg-dark-card p-4" style="border-radius:12px;">
-            <h5 class="fw-bold mb-1">Monthly trend</h5>
-            <p class="page-subtitle mb-4">Sales vs Expenses</p>
-            <div style="position: relative; height:250px; width:100%">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-1">Monthly Trend</h5>
+            <p class="page-subtitle mb-4">Sales vs Expenses Comparison</p>
+            <div style="position: relative; height:260px; width:100%">
                 <canvas id="trendChart"></canvas>
             </div>
             <div class="d-flex justify-content-center gap-4 mt-3 small">
-                <span class="d-flex align-items-center gap-2"><div style="width:12px; height:3px; background-color:#22c55e; border-radius:2px;"></div> Sales</span>
-                <span class="d-flex align-items-center gap-2"><div style="width:12px; height:3px; background-color:#f97316; border-radius:2px;"></div> Expenses</span>
+                <span class="d-flex align-items-center gap-2"><div style="width:10px; height:10px; background-color:#22c55e; border-radius:50%;"></div> Sales</span>
+                <span class="d-flex align-items-center gap-2"><div style="width:10px; height:10px; background-color:#f97316; border-radius:50%;"></div> Expenses</span>
             </div>
         </div>
     </div>
 
     <!-- Health Score Circle -->
     <div class="col-md-4">
-        <div class="bg-dark-card p-4 h-100" style="border-radius:12px;">
-            <h5 class="fw-bold mb-1">Business health score</h5>
+        <div class="card p-4 h-100">
+            <h5 class="fw-bold mb-1">Business Health Score</h5>
             <p class="page-subtitle mb-4">AI-powered weighted indicators</p>
-            <div class="d-flex align-items-center gap-4">
-                <div class="position-relative" style="width: 120px; height: 120px;">
+            <div class="d-flex flex-column align-items-center justify-content-center gap-3">
+                <div class="position-relative" style="width: 140px; height: 140px;">
                     <canvas id="healthChart"></canvas>
                     <div class="position-absolute top-50 start-50 translate-middle text-center w-100">
-                        <h2 class="mb-0 fw-bold" style="color: #f97316;" id="healthScoreValue">--</h2>
+                        <h2 class="mb-0 fw-bold" style="color: #f97316; font-size: 2.2rem;" id="healthScoreValue">--</h2>
                     </div>
                 </div>
-                <div class="flex-grow-1" id="healthIndicators">
+                <div class="w-100 mt-2" id="healthIndicators">
                     <!-- Populated by JS -->
                 </div>
             </div>
@@ -103,23 +133,24 @@
 <div class="row g-4">
     <!-- Expense Breakdown Doughnut -->
     <div class="col-md-6">
-        <div class="bg-dark-card p-4 h-100" style="border-radius:12px;">
+        <div class="card p-4 h-100">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold mb-0">Expense breakdown</h5>
-                <span class="page-subtitle">May 2026</span>
+                <h5 class="fw-bold mb-0">Expense Breakdown</h5>
+                <span class="badge bg-light text-secondary border px-3 py-1 font-monospace" id="expenseBreakdownSubtitle">Loading...</span>
             </div>
             <div class="d-flex justify-content-center" style="position: relative; height:200px; width:100%">
                 <canvas id="expenseChart"></canvas>
             </div>
+            <div id="expenseLegend" class="mt-4 px-2"></div>
         </div>
     </div>
 
     <!-- AI Insights -->
     <div class="col-md-6">
-        <div class="bg-dark-card p-4 h-100" style="border-radius:12px;">
+        <div class="card p-4 h-100">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold mb-0">AI insights</h5>
-                <span class="badge rounded-pill btn-ai-badge px-3 py-1"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> AI</span>
+                <h5 class="fw-bold mb-0">AI Insights</h5>
+                <span class="badge rounded-pill btn-ai-badge px-3 py-1"><i class="fa-solid fa-wand-magic-sparkles me-1"></i> AI Active</span>
             </div>
             <div id="aiInsightsContainer">
                 <!-- Dynamically populated by JS -->
@@ -130,5 +161,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/dashboard.js"></script>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+    alert("Error: " + msg + "\nURL: " + url + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "N/A"));
+    return false;
+};
+</script>
+<script src="/static/js/dashboard.js?v=5"></script>
 {% endblock %}

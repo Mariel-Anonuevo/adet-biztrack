@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Docker/Compose
+docker-compose.yml
+Dockerfile
+
+# Local environment variables (loaded via env_file in compose)
+.env
+
+# Editor files
+.vscode/
+.idea/
