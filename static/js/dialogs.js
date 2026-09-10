@@ -38,14 +38,18 @@ window.showConfirm = function(message, title = "Confirmation Required") {
                 <div style="width: 38px; height: 38px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 1.1rem; flex-shrink: 0;">
                     <i class="fa-solid fa-circle-question"></i>
                 </div>
-                <h5 style="margin: 0; font-weight: 700; color: #1e293b; font-size: 1.15rem;">${title}</h5>
+                <h5 id="customConfirmTitle" style="margin: 0; font-weight: 700; color: #1e293b; font-size: 1.15rem;"></h5>
             </div>
-            <p style="color: #475569; font-size: 0.93rem; line-height: 1.5; margin-bottom: 1.5rem;">${message}</p>
+            <p id="customConfirmMessage" style="color: #475569; font-size: 0.93rem; line-height: 1.5; margin-bottom: 1.5rem;"></p>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
                 <button id="customConfirmCancel" style="background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 0.55rem 1.25rem; font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: background 0.15s;">Cancel</button>
                 <button id="customConfirmOk" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1.25rem; font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: opacity 0.15s; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2);">Confirm</button>
             </div>
         `;
+        const titleEl = card.querySelector('#customConfirmTitle');
+        const messageEl = card.querySelector('#customConfirmMessage');
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
         
         overlay.appendChild(card);
         document.body.appendChild(overlay);
