@@ -265,15 +265,20 @@ function handleBeforePrint() {
     // Set dynamic printing scope text
     const scopeEl = document.getElementById('printReportScope');
     if (scopeEl) {
+        scopeEl.textContent = '';
+        const scopeLabel = document.createElement('strong');
+        scopeLabel.textContent = 'Scope:';
+        scopeEl.appendChild(scopeLabel);
+
         if (window.isGeneratingPDF && window.pdfSelectedText) {
-            scopeEl.innerHTML = `<strong>Scope:</strong> Monthly Report for ${window.pdfSelectedText}`;
+            scopeEl.appendChild(document.createTextNode(` Monthly Report for ${window.pdfSelectedText}`));
         } else {
             const searchInput = document.getElementById('searchReports');
             const query = searchInput ? searchInput.value.trim() : '';
             if (query) {
-                scopeEl.innerHTML = `<strong>Scope:</strong> Filtered Records (Search: "${query}")`;
+                scopeEl.appendChild(document.createTextNode(` Filtered Records (Search: "${query}")`));
             } else {
-                scopeEl.innerHTML = `<strong>Scope:</strong> All Historical Records`;
+                scopeEl.appendChild(document.createTextNode(' All Historical Records'));
             }
         }
     }
